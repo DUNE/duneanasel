@@ -55,7 +55,7 @@ namespace sel::atm {
 
 ### A Note On Template Usage
 
-The `Proxyable_t` type trait is defined in [duneanasel/common/type_traits.h](duneanaself/common/type_traits.h) and its usage above causes an error if any type other than `caf::SRInteraction` instances or `caf::Proxy<caf::SRInteraction>` is passed to the templated functions. It is essentially acting as a pre C++20 type constraint (concept). The worry with using templates is that the compiler error messages become opaque for even quite seasoned users. The `Proxyable_t` type contains a `static_assert` that gives a semi-sensible error message upon failure, however, it is at the top of a potentially long list of template-based error messages from the compiler. The age-old-adage of *always fix error messages from the top down* is important here. A example of incorrect usage and an example error message is given below:
+The `Proxyable_t` type trait is defined in [duneanasel/common/type_traits.h](duneanasel/common/type_traits.h) and its usage above causes an error if any type other than `caf::SRInteraction` instances or `caf::Proxy<caf::SRInteraction>` is passed to the templated functions. It is essentially acting as a pre C++20 type constraint (concept). The worry with using templates is that the compiler error messages become opaque for even quite seasoned users. The `Proxyable_t` type contains a `static_assert` that gives a semi-sensible error message upon failure, however, it is at the top of a potentially long list of template-based error messages from the compiler. The age-old-adage of *always fix error messages from the top down* is important here. A example of incorrect usage and an example error message is given below:
 
 ```c++
 double test = 5;
