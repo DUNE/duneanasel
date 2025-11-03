@@ -27,8 +27,8 @@ file(
 )
 include(${CMAKE_CURRENT_BINARY_DIR}/cmake/CPM.cmake)
 
-option(duneanasel_USE_SRProxy "Whether to build proxy classes for Standard Record objects" OFF)
-option(duneanasel_SRProxy_PYTHON_ENABLED "Whether to build proxy classes for Standard Record objects" OFF)
+option(duneanasel_USE_SRProxy "Whether to build proxy classes for Standard Record objects" ON)
+option(duneanasel_SRProxy_PYTHON_ENABLED "Whether to build python bindings for proxy classes" OFF)
 
 find_package(ROOT 6 REQUIRED)
 
