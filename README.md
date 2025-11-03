@@ -23,11 +23,16 @@ Example selection functions for a beam neutrino selection in FD2 are implemented
 ```c++
 //in duneanasel/fd/beam/Selections.h
 
-template <typename T, typename C = Proxyable_t<caf::SRInteraction, T>>
-bool sel::beam::fd1x8x6::InFV(T const &fd_int)
+namespace sel::beam {
+  enum Sample { kRejected = 0, kNuMuCCLike, kNuECCLike, kNCLike };
 
-template <typename T, typename C = Proxyable_t<caf::SRInteraction, T>>
-sel::beam::Sample sel::beam::fd1x8x6::numode::ApplySelection(T const &fd_int)
+  template <typename T, typename C = Proxyable_t<caf::SRInteraction, T>>
+  bool fd1x8x6::InFV(T const &fd_int);
+
+  template <typename T, typename C = Proxyable_t<caf::SRInteraction, T>>
+  Sample fd1x8x6::numode::ApplySelection(T const &fd_int);
+
+}
 ```
 
 These operate on either `caf::SRInteraction` instances or `caf::Proxy<caf::SRInteraction>` instances.
@@ -37,11 +42,15 @@ The current selection functions for the atmospheric neutrino selection in FD1 ar
 ```c++
 //in duneanasel/fd/atm/Selections.h
 
-template <typename T, typename C = Proxyable_t<caf::SRInteraction, T>>
-bool sel::atm::fd1x2x6::InFV(T const &fd_int)
+namespace sel::atm {
+  enum Sample { kRejected = 0, kNuMuCCLike, kNuECCLike, kNCLike };
 
-template <typename T, typename C = Proxyable_t<caf::SRInteraction, T>>
-sel::atm::Sample sel::atm::fd1x2x6::ApplySelection(T const &fd_int)
+  template <typename T, typename C = Proxyable_t<caf::SRInteraction, T>>
+  bool fd1x2x6::InFV(T const &fd_int);
+
+  template <typename T, typename C = Proxyable_t<caf::SRInteraction, T>>
+  Sample fd1x2x6::ApplySelection(T const &fd_int);
+}
 ```
 
 ### A Note On Template Usage
@@ -114,6 +123,8 @@ error: static assertion failed: Invalid type used for template function
 The structure of these functions follow the same logic as the Selections functions. The example below is scoped to usage for beam neutrino events from FD2 and uses the namespace-scoped (unscoped) FD2 beam samples enums, however, it is likely that the internal logic would be equivalent for any FD detector or neutrino source.
 
 ```c++
+//in duneanasel/fd/beam/Observables.h
+
 template <typename T, typename C = Proxyable_t<caf::SRInteraction, T>>
 float proj::beam::fd1x8x6::ENuReco(T const &fd_int, sel::beam::Sample smpl)
 ```
