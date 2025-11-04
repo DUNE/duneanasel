@@ -1,20 +1,20 @@
 # duneanasel
 
-A development package for testing the design and demo implementatin of a common
-selections package for DUNE ND and FD high-level analysis.
+A development package for testing the design and implementation of a common
+selections/observables package for DUNE ND and FD high-level analysis.
 
-## Requirement / Design Philosophy
+## Requirements / Design Philosophy
 
 *Requirements:*
 * Provide header-only, free functions defining event selections and event observables that satisfy high-level analysis needs for the near detector and far detector event samples.
 * Functions should operate on the hierarchial analysis objects defined in [`duneanaobj`](https://github.com/DUNE/duneanaobj).
-* Function arguments should be either references to instances of `duneanaobj` types or `caf::Proxy<T>` wrappers of instances of the same.
+* Function should be able to operate on `caf::Proxy<T>` wrappers of instances of the `duneanaobj`ects to enable the I/O speedup on offer.
 
 *Design Choices:*
 * Make use of nested namespaces to scope generically named selection and projection functions: __e.g.__ `sel::beam::fd1x8x6::NuMuCCLike`.
-* Use SINFAE template-based type constraints to provide single functions that can take either `duneanaobj` instances or `caf::Proxy<T>` wrappers of instances.
+* Use SINFAE template-based type constraints to provide single functions that can take either `duneanaobj`ect instances or `caf::Proxy<T>` wrappers of instances.
 * Use unscoped enum types to identify events passing cuts for specific samples.
-* Provide a CMake build system capable of building the `duneanaobj`dependency without user intervention.
+* Provide a CMake build system capable of building the `duneanaobj` dependency without user intervention, under the expectation that `duneanaobj` changes much more slowly than development on the common tools package and so non-expert co-development of both package is infrequent.
 
 ## Selections
 
@@ -26,10 +26,10 @@ Example selection functions for a beam neutrino selection in FD2 are implemented
 namespace sel::beam {
   enum Sample { kRejected = 0, kNuMuCCLike, kNuECCLike, kNCLike };
 
-  template <typename T, typename C = Proxyable_t<caf::SRInteraction, T>>
+  template <typename T, typename SRTypeConstraint = Proxyable_t<caf::SRInteraction, T>>
   bool fd1x8x6::InFV(T const &fd_int);
 
-  template <typename T, typename C = Proxyable_t<caf::SRInteraction, T>>
+  template <typename T, typename SRTypeConstraint = Proxyable_t<caf::SRInteraction, T>>
   Sample fd1x8x6::numode::ApplySelection(T const &fd_int);
 
 }
@@ -45,10 +45,10 @@ The current selection functions for the atmospheric neutrino selection in FD1 ar
 namespace sel::atm {
   enum Sample { kRejected = 0, kNuMuCCLike, kNuECCLike, kNCLike };
 
-  template <typename T, typename C = Proxyable_t<caf::SRInteraction, T>>
+  template <typename T, typename SRTypeConstraint = Proxyable_t<caf::SRInteraction, T>>
   bool fd1x2x6::InFV(T const &fd_int);
 
-  template <typename T, typename C = Proxyable_t<caf::SRInteraction, T>>
+  template <typename T, typename SRTypeConstraint = Proxyable_t<caf::SRInteraction, T>>
   Sample fd1x2x6::ApplySelection(T const &fd_int);
 }
 ```
@@ -120,12 +120,12 @@ error: static assertion failed: Invalid type used for template function
 
 ## Observable Projections
 
-The structure of these functions follow the same logic as the Selections functions. The example below is scoped to usage for beam neutrino events from FD2 and uses the namespace-scoped (unscoped) FD2 beam samples enums, however, it is likely that the internal logic would be equivalent for any FD detector or neutrino source.
+The structure of these functions follow the same logic as the Selections functions. The example below is scoped to usage for beam neutrino events from FD2 and uses the namespace-scoped FD2 beam samples(unscoped) enums, however, it is possible that the internal logic may be equivalent for any FD detector or neutrino source.
 
 ```c++
 //in duneanasel/fd/beam/Observables.h
 
-template <typename T, typename C = Proxyable_t<caf::SRInteraction, T>>
+template <typename T, typename SRTypeConstraint = Proxyable_t<caf::SRInteraction, T>>
 float proj::beam::fd1x8x6::ENuReco(T const &fd_int, sel::beam::Sample smpl)
 ```
 
