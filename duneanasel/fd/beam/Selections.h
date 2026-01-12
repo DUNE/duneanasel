@@ -64,7 +64,7 @@ inline sel::beam::Sample ApplySelection(T const &fd_int) {
 
   if (sel::beam::fd1x8x6::numode::NuMuCCLike(fd_int)) {
     return sel::beam::kNuMuCCLike;
-  } else if (sel::beam::fd1x8x6::numode::NuMuCCLike(fd_int)) {
+  } else if (sel::beam::fd1x8x6::numode::NuECCLike(fd_int)) {
     return sel::beam::kNuECCLike;
   } else if (sel::beam::fd1x8x6::numode::NCLike(fd_int)) {
     return sel::beam::kNCLike;
