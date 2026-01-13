@@ -1,11 +1,9 @@
 #pragma once
 
-#include "duneanaobj/StandardRecord/SRInteraction.h"
+#include "duneanasel/common/RecoTools.h"
 
-#include "duneanasel/common/type_traits.h"
-
-//The selection in this file was originally developed by Eva Sabater, what follows
-//  is a transcription from the original CAFAna code.
+// The selection in this file was originally developed by Eva Sabater, what
+// follows is a transcription from the original CAFAna code.
 
 namespace sel {
 namespace beam {
@@ -41,41 +39,13 @@ inline bool InFV(T const &nd_int) {
 }
 
 template <typename T, typename C = Proxyable_t<caf::SRInteraction, T>>
-inline bool AllPartContained(T const &nd_int) {
+inline bool AllPrimaryParticlesContained(T const &nd_int) {
   for (auto const &p : nd_int.part.dlp) {
     if ((p.primary == 1) && (p.contained != 1)) {
       return false;
     }
   }
   return true;
-}
-
-template <typename T, typename C = Proxyable_t<caf::SRRecoParticle, T>>
-inline double ParticleLength(T const &p) {
-  return std::hypot(p.end.x - p.start.x, p.end.y - p.start.y,
-                    p.end.z - p.start.z);
-}
-
-template <typename T, typename C = Proxyable_t<caf::SRInteraction, T>>
-inline caf::SRRecoParticleProxy const *GetLongestParticle(T const &nd_int) {
-  if (!nd_int.part.dlp.size()) {
-    return nullptr;
-  }
-
-  double longest = -std::numeric_limits<double>::max();
-  size_t longest_idx = std::numeric_limits<size_t>::max();
-  for (size_t i = 0; i < nd_int.part.dlp.size(); ++i) {
-    const auto &p = nd_int.part.dlp[i];
-    if (p.primary != 1) {
-      continue;
-    }
-    double const &plen = ParticleLength(p);
-    if (plen > longest) {
-      longest = plen;
-      longest_idx = i;
-    }
-  }
-  return &nd_int.part.dlp[longest_idx];
 }
 
 template <typename T, typename C = Proxyable_t<caf::SRInteraction, T>>
@@ -92,10 +62,10 @@ namespace numode {
 
 template <typename T, typename C = Proxyable_t<caf::SRInteraction, T>>
 inline bool NuMuCCLikeContained(T const &nd_int) {
-  if (!InFV(nd_int) || !AllPartContained(nd_int)) {
+  if (!InFV(nd_int) || !AllPrimaryParticlesContained(nd_int)) {
     return false;
   }
-  auto plong = GetLongestParticle(nd_int);
+  auto plong = ana::GetLongestParticle(nd_int);
   if (!plong || (plong->pdg != 13)) {
     return false;
   }
@@ -104,7 +74,7 @@ inline bool NuMuCCLikeContained(T const &nd_int) {
 
 template <typename T, typename C = Proxyable_t<caf::SRInteraction, T>>
 inline bool NuECCLikeContained(T const &nd_int) {
-  if (!InFV(nd_int) || !AllPartContained(nd_int) ||
+  if (!InFV(nd_int) || !AllPrimaryParticlesContained(nd_int) ||
       !HasParticleWithReconstructedPID(nd_int, 11)) {
     return false;
   }

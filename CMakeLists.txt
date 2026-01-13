@@ -51,7 +51,7 @@ if(duneanasel_USE_SRProxy)
   endif()
 else()
   if(NOT DEFINED DUNE_ANAOBJ_BRANCH OR "${DUNE_ANAOBJ_BRANCH}x" STREQUAL "x")
-    set(DUNE_ANAOBJ_BRANCH v03_06_00)
+    set(DUNE_ANAOBJ_BRANCH v03_06_01)
   endif()
   CPMAddPackage(
     NAME duneanaobj
