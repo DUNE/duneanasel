@@ -144,3 +144,7 @@ An example of using selections defined in this package to write an application t
 ### An application built by a dependent project
 
 An example of an empty analysis loop exectuable with a minimal CMake build system can be found [here](examples/user_project). This directory should not be added to the main buildsystem used by this project, but can be used as a skeleton for new CMake projects that should depend on the selections and observables defined in this repository.
+
+### Fiducial volume cuts and summary files for analysis software
+
+Another example of using the `SRProxy` python bindings (`pySRProxy`). This example applies some cuts with `pandas` and then outputs a root file using `uproot` that could be used as input to the [MaCh3](https://github.com/mach3-software/MaCh3) analysis software.
