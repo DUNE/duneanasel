@@ -141,6 +141,8 @@ An example of using the [`SRProxy`]()-generated python bindings to perform a sim
 
 An example of using selections defined in this package to write an application that splits an incoming CAF TTree into separate TTree's based on the selection cuts that each entry passes can be found [here](examples/sample_separation/separate_FD_sample.cxx). This executable is built by this package as an example for how to add compiled code/applications to this repository.
 
+* An NDLAr example that applys a simple selection and outputs a histogram can be found [here](examples/ndlarplot/NDLAr_NumuCCContained_LongestTrack.cxx).
+
 ### An application built by a dependent project
 
 An example of an empty analysis loop exectuable with a minimal CMake build system can be found [here](examples/user_project). This directory should not be added to the main buildsystem used by this project, but can be used as a skeleton for new CMake projects that should depend on the selections and observables defined in this repository.

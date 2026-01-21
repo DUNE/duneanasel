@@ -49,7 +49,7 @@ if(duneanasel_USE_UPS_duneanaobj) # use UPS by default
   target_include_directories(duneanaobj_all INTERFACE $ENV{SRPROXY_INC})
   add_library(duneanaobj::all ALIAS duneanaobj_all)
 elseif(duneanasel_USE_SRProxy)
- find_package(duneanaobj QUIET)
+ find_package(duneanaobj 4 QUIET)
  if(NOT duneanaobj_FOUND)
     CPMFindPackage(
       NAME duneanaobj
