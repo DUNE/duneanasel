@@ -27,14 +27,19 @@ file(
 )
 include(${CMAKE_CURRENT_BINARY_DIR}/cmake/CPM.cmake)
 
-option(duneanasel_USE_SRProxy "Whether to build proxy classes for Standard Record objects" ON)
+option(duneanasel_USE_SRProxy "Whether to build proxy classes for Standard Record objects" OFF)
 option(duneanasel_SRProxy_PYTHON_ENABLED "Whether to build python bindings for proxy classes" OFF)
 
 find_package(ROOT 6 REQUIRED)
 
-if(duneanasel_USE_SRProxy)
-  find_package(duneanaobj)
+find_package(duneanaobj QUIET)
 
+if(duneanaobj_FOUND AND TARGET duneanaobj::StandardRecordProxy)
+  message(STATUS "Found duneanaobj in ${duneanaobj_SOURCE}.")
+  add_library(duneanaobj_all INTERFACE)
+  target_link_libraries(duneanaobj_all PUBLIC duneanaobj::StandardRecordProxy duneanaobj::StandardRecordFlat)
+  add_library(duneanaobj::all ALIAS duneanaobj_all)
+elseif(duneanasel_USE_SRProxy)
   if(NOT duneanaobj_FOUND)
     CPMFindPackage(
       NAME duneanaobj
@@ -93,7 +98,6 @@ else()
   add_library(duneanaobj::all ALIAS duneanaobj_StandardRecord)
 
 endif()
-
 
 add_library(duneanasel_all INTERFACE)
 
