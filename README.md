@@ -129,6 +129,18 @@ template <typename T, typename SRTypeConstraint = Proxyable_t<caf::SRInteraction
 float proj::beam::fd1x8x6::ENuReco(T const &fd_int, sel::beam::Sample smpl)
 ```
 
+## Buildme
+
+As the tools provided by this package are header-only, there isn't a whole lot to build directly. However,
+the buildsystem exists to check if dependencies are built and optionally build them if not, specifically
+[`duneanaobj`](https://github.com/DUNE/duneanaobj). A few configuration options exist depending on how
+you want to find/build `duneanaobj`:
+
+* `cmake .. -Dduneanasel_USE_UPS_duneanaobj=ON`: will try and use duneanaobj/SRProxy from a set up UPS distribution.
+* `cmake .. [-Dduneanasel_USE_SRProxy=ON]`: enabled by default, this will set up or build the clingified version of duneanaobj.
+* `cmake .. -Dduneanasel_USE_SRProxy=OFF [-DDUNE_ANAOBJ_BRANCH=v03_06_01]`:  This will build just the StandardRecord class from a specified version of duneanaobj. It will not build SRProxy for you and so no `caf::Proxy` instances can be used.
+
+
 ## Example Usage
 
 The following sections give brief descriptions of the example usage contained in this repository.
