@@ -149,6 +149,8 @@ you want to find/build `duneanaobj`:
   duneanaobj. It will not build SRProxy for you and so no `caf::Proxy` instances
   can be used.
 
+C++ Examples can be built by configuring like `cmake .. -Dduneanasel_build_examples=ON`.
+
 ## Example Usage
 
 The following sections give brief descriptions of the example usage contained in this repository.
