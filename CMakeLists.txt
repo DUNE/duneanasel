@@ -28,6 +28,7 @@ file(
 include(${CMAKE_CURRENT_BINARY_DIR}/cmake/CPM.cmake)
 
 option(duneanasel_USE_UPS_duneanaobj "Whether to build proxy classes for Standard Record objects" OFF)
+option(duneanasel_build_examples "Whether to build examples" OFF)
 option(duneanasel_USE_SRProxy "Whether to build proxy classes for Standard Record objects" ON)
 option(duneanasel_SRProxy_PYTHON_ENABLED "Whether to build python bindings for proxy classes" OFF)
 
@@ -118,4 +119,6 @@ target_include_directories(duneanasel_all INTERFACE
 
 add_library(duneanasel::all ALIAS duneanasel_all)
 
-add_subdirectory(examples)
+if(duneanasel_build_examples)
+  add_subdirectory(examples)
+endif()
