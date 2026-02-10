@@ -51,7 +51,7 @@ int main(int argc, char const *argv[]) {
       }
 
       if (sel::beam::ndlar::numode::ApplySelection(nd_int) !=
-          sel::beam::kNuMuCCLikeContained) {
+          sel::beam::ndlar::kNuMuCCLikeContained) {
         continue;
       } else {
         std::cout << "  => Selected!" << std::endl;
