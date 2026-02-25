@@ -55,12 +55,11 @@ ROOT::VecOps::RVec<caf::SRVector3D> nu_prop_by_pdg(const ROOT::VecOps::RVec<caf:
     return OUT;
 }
 
-ROOT::VecOps::RVec<Int_t> prim_pdg(const ROOT::VecOps::RVec<std::vector<caf::SRTrueParticle>>& p) {
-
-    ROOT::VecOps::RVec<Int_t> OUT;
+ROOT::VecOps::RVec<Int_t> prim_pdg(const ROOT::VecOps::RVec<caf::SRTrueInteraction>& p) {
+    ROOT::VecOps::RVec<Int_t> OUT ;
 
     for (const auto & prim_vec : p) {
-            for (const auto & prim : prim_vec) {
+            for (const auto & prim : prim_vec.prim) {
                 OUT.push_back(prim.pdg);
         } 
     }
