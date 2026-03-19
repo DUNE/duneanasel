@@ -10,7 +10,15 @@ namespace beam {
 
 namespace ndlar {
 
-enum Sample { kRejected = 0, kNuMuCCLikeContained, kNuECCLikeContained };
+enum Sample { kRejected = 0, NuMuCCLikeContainedMuonEscapesDownstream, kNuECCLikeContained };
+
+template <typename T, typename C = Proxyable_t<caf::SRInteraction, T>>
+inline bool IntHasParticles(T const &nd_int) {
+  if (nd_int.part.dlp.empty()) {
+    return false;
+  }
+  return true;
+}
 
 template <typename T, typename C = Proxyable_t<caf::SRInteraction, T>>
 inline bool LongestPrimTrackLengthCut(T const &nd_int) {
@@ -85,7 +93,7 @@ template <typename T, typename C = Proxyable_t<caf::SRInteraction, T>>
 inline bool HasParticleWithReconstructedPID(T const &nd_int, int pid) {
   for (auto const &p : nd_int.part.dlp) {
     if ((p.primary == 1) && (p.pdg == pid)) {
-      return false;
+      return true;
     }
   }
   return false;
@@ -106,6 +114,16 @@ inline bool NuMuCCLikeContained(T const &nd_int) {
 }
 
 template <typename T, typename C = Proxyable_t<caf::SRInteraction, T>>
+inline bool NuMuCCLikeContainedMuonEscapesDownstream(T const &nd_int) {
+  for (auto const &p : nd_int.part.dlp) {
+    if (p.primary == 1 && p.pdg == 13) {
+      return true;
+    }
+  }
+  return false;
+}
+
+template <typename T, typename C = Proxyable_t<caf::SRInteraction, T>>
 inline bool NuECCLikeContained(T const &nd_int) {
   if (!InFV(nd_int) || !AllPrimaryParticlesContained(nd_int) ||
       !HasParticleWithReconstructedPID(nd_int, 11)) {
@@ -115,15 +133,17 @@ inline bool NuECCLikeContained(T const &nd_int) {
 }
 
 template <typename T, typename C = Proxyable_t<caf::SRInteraction, T>>
-inline sel::beam::ndlar::Sample ApplySelection(T const &fd_int) {
+inline sel::beam::ndlar::Sample ApplySelection(T const &nd_int) {
 
-  if (!sel::beam::ndlar::InFV(fd_int)) {
+  if (!sel::beam::ndlar::IntHasParticles(nd_int) 
+   && !sel::beam::ndlar::LongestPrimTrackLengthCut(nd_int)
+   && !sel::beam::ndlar::InFV(nd_int)) {
     return sel::beam::ndlar::kRejected;
   }
 
-  if (sel::beam::ndlar::numode::NuMuCCLikeContained(fd_int)) {
-    return sel::beam::ndlar::kNuMuCCLikeContained;
-  } else if (sel::beam::ndlar::numode::NuECCLikeContained(fd_int)) {
+  if (sel::beam::ndlar::numode::NuMuCCLikeContainedMuonEscapesDownstream(nd_int)) {
+    return sel::beam::ndlar::NuMuCCLikeContainedMuonEscapesDownstream;
+  } else if (sel::beam::ndlar::numode::NuECCLikeContained(nd_int)) {
     return sel::beam::ndlar::kNuECCLikeContained;
   }
   return sel::beam::ndlar::kRejected;
