@@ -49,6 +49,32 @@ inline bool AllPrimaryParticlesContained(T const &nd_int) {
 }
 
 template <typename T, typename C = Proxyable_t<caf::SRInteraction, T>>
+inline bool ParticlesNDLArContainedMuonsEscapeDownstream(T const &nd_int) {
+  for (auto const &p : nd_int.part.dlp){
+    bool contained = (p.contained == 1);
+    bool isPrimaryMuon = (p.pdg == 13 && p.primary == 1);
+    bool escapesToTMS = false;
+
+    if (isPrimaryMuon) {
+      float x = p.end.x;
+      float y = p.end.y;
+      float z = p.end.z;
+
+      escapesToTMS =
+        (x < (NDLArXHi - 25)) && (x > (NDLArXLo + 25)) &&
+        (y < (NDLArYHi - 25)) && (y > (NDLArYLo + 25)) &&
+        (z > (NDLArZLo + 25));
+    }
+
+    if (!contained && !escapesToTMS) {
+      return false;
+    }
+  }
+
+  return true;
+}
+
+template <typename T, typename C = Proxyable_t<caf::SRInteraction, T>>
 inline bool HasParticleWithReconstructedPID(T const &nd_int, int pid) {
   for (auto const &p : nd_int.part.dlp) {
     if ((p.primary == 1) && (p.pdg == pid)) {
