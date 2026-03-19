@@ -10,7 +10,7 @@ namespace beam {
 
 namespace ndlar {
 
-enum Sample { kRejected = 0, NuMuCCLikeContainedMuonEscapesDownstream, kNuECCLikeContained };
+enum Sample { kRejected = 0, NuMuCCLike, kNuECCLikeContained };
 
 template <typename T, typename C = Proxyable_t<caf::SRInteraction, T>>
 inline bool IntHasParticles(T const &nd_int) {
@@ -114,7 +114,7 @@ inline bool NuMuCCLikeContained(T const &nd_int) {
 }
 
 template <typename T, typename C = Proxyable_t<caf::SRInteraction, T>>
-inline bool NuMuCCLikeContainedMuonEscapesDownstream(T const &nd_int) {
+inline bool NuMuCCLike(T const &nd_int) {
   for (auto const &p : nd_int.part.dlp) {
     if (p.primary == 1 && p.pdg == 13) {
       return true;
@@ -137,12 +137,13 @@ inline sel::beam::ndlar::Sample ApplySelection(T const &nd_int) {
 
   if (!sel::beam::ndlar::IntHasParticles(nd_int) 
    && !sel::beam::ndlar::LongestPrimTrackLengthCut(nd_int)
-   && !sel::beam::ndlar::InFV(nd_int)) {
+   && !sel::beam::ndlar::InFV(nd_int)
+   && !sel::beam::ndlar::ParticlesNDLArContainedMuonsEscapeDownstream(nd_int)) {
     return sel::beam::ndlar::kRejected;
   }
 
-  if (sel::beam::ndlar::numode::NuMuCCLikeContainedMuonEscapesDownstream(nd_int)) {
-    return sel::beam::ndlar::NuMuCCLikeContainedMuonEscapesDownstream;
+  if (sel::beam::ndlar::numode::NuMuCCLike(nd_int)) {
+    return sel::beam::ndlar::NuMuCCLike;
   } else if (sel::beam::ndlar::numode::NuECCLikeContained(nd_int)) {
     return sel::beam::ndlar::kNuECCLikeContained;
   }
