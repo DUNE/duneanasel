@@ -13,6 +13,15 @@ namespace ndlar {
 enum Sample { kRejected = 0, kNuMuCCLikeContained, kNuECCLikeContained };
 
 template <typename T, typename C = Proxyable_t<caf::SRInteraction, T>>
+inline bool LongestPrimTrackLengthCut(T const &nd_int) {
+  auto plong = ana::GetLongestParticle(nd_int);
+  if (!plong) {
+    return false;
+  }
+  return ana::ParticleLength(*plong) > 0.1;
+}
+
+template <typename T, typename C = Proxyable_t<caf::SRInteraction, T>>
 inline bool InFV(T const &nd_int) {
 
   constexpr double NDLArXLo = -346.9;
@@ -65,12 +74,10 @@ inline bool ParticlesNDLArContainedMuonsEscapeDownstream(T const &nd_int) {
         (y < (NDLArYHi - 25)) && (y > (NDLArYLo + 25)) &&
         (z > (NDLArZLo + 25));
     }
-
     if (!contained && !escapesToTMS) {
       return false;
     }
   }
-
   return true;
 }
 
