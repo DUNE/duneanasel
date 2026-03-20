@@ -136,9 +136,9 @@ template <typename T, typename C = Proxyable_t<caf::SRInteraction, T>>
 inline sel::beam::ndlar::Sample ApplySelection(T const &nd_int) {
 
   if (!sel::beam::ndlar::IntHasParticles(nd_int) 
-   && !sel::beam::ndlar::LongestPrimTrackLengthCut(nd_int)
-   && !sel::beam::ndlar::InFV(nd_int)
-   && !sel::beam::ndlar::ParticlesNDLArContainedMuonsEscapeDownstream(nd_int)) {
+   || !sel::beam::ndlar::LongestPrimTrackLengthCut(nd_int)
+   || !sel::beam::ndlar::InFV(nd_int)
+   || !sel::beam::ndlar::ParticlesNDLArContainedMuonsEscapeDownstream(nd_int)) {
     return sel::beam::ndlar::kRejected;
   }
 
