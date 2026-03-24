@@ -1,6 +1,10 @@
 add_executable(NDLAr_NumuCCContained_LongestTrack NDLAr_NumuCCContained_LongestTrack.cxx)
 target_link_libraries(NDLAr_NumuCCContained_LongestTrack duneanasel::all)
 
+add_executable(NDLAr_NumuCCContained_LongestTrack_MaCh3 NDLAr_NumuCCContained_LongestTrack_MaCh3.cxx)
+target_link_libraries(NDLAr_NumuCCContained_LongestTrack_MaCh3 duneanasel::all)
+
 install(TARGETS
   NDLAr_NumuCCContained_LongestTrack
+  NDLAr_NumuCCContained_LongestTrack_MaCh3
   DESTINATION bin)
