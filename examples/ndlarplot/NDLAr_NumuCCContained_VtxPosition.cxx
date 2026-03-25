@@ -13,7 +13,11 @@ int main(int argc, char const *argv[]) {
 
   TChain ch("cafTree");
 
-  ch.Add("/pnfs/dune/persistent/physicsgroups/dunendsim/abooth/nd-production/MicroProdN4p1/run-cafmaker/MicroProdN4p1_NDComplex_FHC.caf.full.spineonly/CAF.flat/0002000/*/*.root");
+  std::ifstream fin("/exp/dune/app/users/esabater/MicroProdN4p1_cafs_list.txt");
+  std::string fname;
+  while (fin >> fname) {
+      ch.Add(fname.c_str());
+  }
 
   caf::StandardRecord *SR = nullptr;
   ch.SetBranchAddress("rec", &SR);
