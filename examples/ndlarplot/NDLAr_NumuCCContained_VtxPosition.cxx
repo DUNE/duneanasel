@@ -8,13 +8,18 @@
 #include "TH1D.h"
 
 #include <memory>
+#include <fstream>
+#include <string>
+#include <iostream>
 
 int main(int argc, char const *argv[]) {
 
   TChain ch("cafTree");
 
-  for(int i = 1; i < argc; ++i){
-    ch.Add(argv[i]);
+  std::ifstream fin("/exp/dune/app/users/esabater/MicroProdN4p1_cafs_list.txt");
+  std::string fname;
+  while (fin >> fname) {
+      ch.Add(fname.c_str());
   }
 
   caf::StandardRecord *SR = nullptr;
