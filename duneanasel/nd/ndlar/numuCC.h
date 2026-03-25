@@ -12,6 +12,13 @@ namespace ndlar {
 
 enum Sample { kRejected = 0, kNuMuCCLikeContained, kNuECCLikeContained };
 
+constexpr double NDLArXLo = -346.9;
+constexpr double NDLArXHi = 346.9;
+constexpr double NDLArYLo = -215.5;
+constexpr double NDLArYHi = 81.7;
+constexpr double NDLArZLo = 418.2;
+constexpr double NDLArZHi = 913.3;
+
 template <typename T, typename C = Proxyable_t<caf::SRInteraction, T>>
 inline bool IntHasParticles(T const &nd_int) {
   if (nd_int.part.dlp.empty()) {
@@ -31,13 +38,6 @@ inline bool LongestPrimTrackLengthCut(T const &nd_int) {
 
 template <typename T, typename C = Proxyable_t<caf::SRInteraction, T>>
 inline bool InFV(T const &nd_int) {
-
-  constexpr double NDLArXLo = -346.9;
-  constexpr double NDLArXHi = 346.9;
-  constexpr double NDLArYLo = -215.5;
-  constexpr double NDLArYHi = 81.7;
-  constexpr double NDLArZLo = 418.2;
-  constexpr double NDLArZHi = 913.3;
 
   float x = nd_int.vtx.x;
   if ((x <= (NDLArXLo + 25)) || (x >= (NDLArXHi - 25))) {
