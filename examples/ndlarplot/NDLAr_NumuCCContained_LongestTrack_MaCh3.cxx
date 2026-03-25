@@ -109,7 +109,7 @@ int main(int argc, char const *argv[]) {
       isCC = truth_ixn.iscc;
       nuPDGunosc = truth_ixn.pdgorig;
       nuPDG = truth_ixn.pdg;
-      reco_q = truth_ixn.Q2;
+      reco_q = truth_ixn.modq;
 
       if (nuPDGunosc == 14 && nuPDG == 14) {
         numu_x_numu->Fill();
