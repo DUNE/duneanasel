@@ -10,7 +10,7 @@ namespace beam {
 
 namespace ndlar {
 
-enum Sample { kRejected = 0, NuMuCCLike, kNuECCLikeContained };
+enum Sample { kRejected = 0, kNuMuCCLikeContained, kNuECCLikeContained };
 
 template <typename T, typename C = Proxyable_t<caf::SRInteraction, T>>
 inline bool IntHasParticles(T const &nd_int) {
@@ -143,7 +143,7 @@ inline sel::beam::ndlar::Sample ApplySelection(T const &nd_int) {
   }
 
   if (sel::beam::ndlar::numode::NuMuCCLike(nd_int)) {
-    return sel::beam::ndlar::NuMuCCLike;
+    return sel::beam::ndlar::kNuMuCCLikeContained;
   } else if (sel::beam::ndlar::numode::NuECCLikeContained(nd_int)) {
     return sel::beam::ndlar::kNuECCLikeContained;
   }
