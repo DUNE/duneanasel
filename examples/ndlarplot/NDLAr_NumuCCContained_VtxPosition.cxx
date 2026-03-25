@@ -8,6 +8,9 @@
 #include "TH1D.h"
 
 #include <memory>
+#include <fstream>
+#include <string>
+#include <iostream>
 
 int main(int argc, char const *argv[]) {
 
