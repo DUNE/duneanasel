@@ -1,4 +1,4 @@
-#include "duneanasel/nd/ndlar/numuCC.h"
+#include "duneanasel/nd/ndlar/Selections.h"
 
 #include "duneanaobj/StandardRecord/Proxy/SRProxy.h"
 #include "duneanaobj/StandardRecord/StandardRecord.h"
@@ -16,10 +16,8 @@ int main(int argc, char const *argv[]) {
 
   TChain ch("cafTree");
 
-  std::ifstream fin("/exp/dune/app/users/esabater/MicroProdN4p1_cafs_list.txt");
-  std::string fname;
-  while (fin >> fname) {
-      ch.Add(fname.c_str());
+  for(int i = 1; i < argc; ++i){
+    ch.Add(argv[i]);
   }
 
   caf::StandardRecord *SR = nullptr;
@@ -30,9 +28,7 @@ int main(int argc, char const *argv[]) {
 
   ch.GetEntry(0);
 
-  TFile hout("mutracklen.root", "RECREATE");
-  TH1D mutracklen("mutracklen", ";Track Length [cm]; Count", 100, 0, 1000);
-  TH1D alltracklen("alltracklen", ";Track Length [cm]; Count", 100, 0, 1000);
+  TFile hout("vtx_position.root", "RECREATE");
   TH1D vtxX("vtrxX", ";Vertex X [cm]; Count", 100, -350, 350);
   TH1D vtxY("vtrxY", ";Vertex Y [cm]; Count", 100, -220, 85);
   TH1D vtxZ("vtrxZ", ";Vertex Z [cm]; Count", 100, 410, 920);
@@ -45,8 +41,8 @@ int main(int argc, char const *argv[]) {
     for (auto const &nd_int : SR->common.ixn.dlp) {
       std::cout << "  Interaction: " << j++ << " | InFV: "
                 << (sel::beam::ndlar::InFV(nd_int) ? "true" : "false")
-                << " | AllPrimaryParticlesContained: "
-                << (sel::beam::ndlar::AllPrimaryParticlesContained(nd_int)
+                << " | AllPrimaryParticlesContainedMuonsEscapeDownstream: "
+                << (sel::beam::ndlar::ParticlesNDLArContainedMuonsEscapeDownstream(nd_int)
                         ? "true"
                         : "false");
       auto longp = ana::GetLongestParticle(nd_int);
@@ -68,12 +64,6 @@ int main(int argc, char const *argv[]) {
       vtxX.Fill(nd_int.vtx.x);
       vtxY.Fill(nd_int.vtx.y);
       vtxZ.Fill(nd_int.vtx.z);
-
-      mutracklen.Fill(ana::ParticleLength(*ana::GetLongestParticle(nd_int)));
-
-      for (auto const &p : nd_int.part.dlp) {
-        alltracklen.Fill(ana::ParticleLength(p));
-      }
 
     }
   }
