@@ -50,7 +50,7 @@ int main(int argc, char const *argv[]) {
         std::cout << " | LongestParticle: null" << std::endl;
       }
 
-      if (sel::beam::ndlar::numode::ApplySelection(nd_int) !=
+      if (sel::beam::ndlar::numode::ApplySelectionV0(nd_int) !=
           sel::beam::ndlar::kNuMuCCLikeContained) {
         continue;
       } else {

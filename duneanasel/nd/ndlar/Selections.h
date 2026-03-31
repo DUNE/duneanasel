@@ -134,7 +134,22 @@ inline bool NuECCLikeContained(T const &nd_int) {
 }
 
 template <typename T, typename C = Proxyable_t<caf::SRInteraction, T>>
-inline sel::beam::ndlar::Sample ApplySelection(T const &nd_int) {
+inline sel::beam::ndlar::Sample ApplySelectionV0(T const &fd_int) {
+
+  if (!sel::beam::ndlar::InFV(fd_int)) {
+    return sel::beam::ndlar::kRejected;
+  }
+
+  if (sel::beam::ndlar::numode::NuMuCCLikeContained(fd_int)) {
+    return sel::beam::ndlar::kNuMuCCLikeContained;
+  } else if (sel::beam::ndlar::numode::NuECCLikeContained(fd_int)) {
+    return sel::beam::ndlar::kNuECCLikeContained;
+  }
+  return sel::beam::ndlar::kRejected;
+}
+
+template <typename T, typename C = Proxyable_t<caf::SRInteraction, T>>
+inline sel::beam::ndlar::Sample ApplySelectionV0p1(T const &nd_int) {
 
   if (!sel::beam::ndlar::IntHasParticles(nd_int) 
    || !sel::beam::ndlar::LongestPrimTrackLengthCut(nd_int)
