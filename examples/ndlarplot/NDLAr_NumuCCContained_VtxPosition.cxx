@@ -8,6 +8,9 @@
 #include "TH1D.h"
 
 #include <memory>
+#include <fstream>
+#include <string>
+#include <iostream>
 
 int main(int argc, char const *argv[]) {
 
@@ -25,9 +28,10 @@ int main(int argc, char const *argv[]) {
 
   ch.GetEntry(0);
 
-  TFile hout("mutracklen.root", "RECREATE");
-  TH1D mutracklen("mutracklen", ";Track Length [cm]; Count", 100, 0, 1000);
-  TH1D alltracklen("alltracklen", ";Track Length [cm]; Count", 100, 0, 1000);
+  TFile hout("vtx_position.root", "RECREATE");
+  TH1D vtxX("vtrxX", ";Vertex X [cm]; Count", 100, -350, 350);
+  TH1D vtxY("vtrxY", ";Vertex Y [cm]; Count", 100, -220, 85);
+  TH1D vtxZ("vtrxZ", ";Vertex Z [cm]; Count", 100, 410, 920);
   for (Long64_t i = 0; i < ents; ++i) {
     ch.GetEntry(i);
 
@@ -37,8 +41,8 @@ int main(int argc, char const *argv[]) {
     for (auto const &nd_int : SR->common.ixn.dlp) {
       std::cout << "  Interaction: " << j++ << " | InFV: "
                 << (sel::beam::ndlar::InFV(nd_int) ? "true" : "false")
-                << " | AllPrimaryParticlesContained: "
-                << (sel::beam::ndlar::AllPrimaryParticlesContained(nd_int)
+                << " | AllPrimaryParticlesContainedMuonsEscapeDownstream: "
+                << (sel::beam::ndlar::ParticlesNDLArContainedMuonsEscapeDownstream(nd_int)
                         ? "true"
                         : "false");
       auto longp = ana::GetLongestParticle(nd_int);
@@ -50,18 +54,16 @@ int main(int argc, char const *argv[]) {
         std::cout << " | LongestParticle: null" << std::endl;
       }
 
-      if (sel::beam::ndlar::numode::ApplySelectionV0(nd_int) !=
+      if (sel::beam::ndlar::numode::ApplySelectionV0p1(nd_int) !=
           sel::beam::ndlar::kNuMuCCLikeContained) {
         continue;
       } else {
         std::cout << "  => Selected!" << std::endl;
       }
 
-      mutracklen.Fill(ana::ParticleLength(*ana::GetLongestParticle(nd_int)));
-
-      for (auto const &p : nd_int.part.dlp) {
-        alltracklen.Fill(ana::ParticleLength(p));
-      }
+      vtxX.Fill(nd_int.vtx.x);
+      vtxY.Fill(nd_int.vtx.y);
+      vtxZ.Fill(nd_int.vtx.z);
 
     }
   }
