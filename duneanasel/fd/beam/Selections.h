@@ -74,8 +74,8 @@ inline sel::beam::fd1x8x6::Sample ApplySelection(T const &fd_int) {
 } // namespace numode
 } // namespace fd1x8x6
 
-using namespace FDVD = fd1x8x6;
-using namespace FD1 = FDVD;
+namespace FDVD = fd1x8x6;
+namespace FD1 = FDVD;
 
 namespace fd1x2x6 {
 // from CVN training, here:
@@ -100,8 +100,8 @@ inline bool InFV(T const &fd_int) {
 
 } // namespace fd1x2x6
 
-using namespace FDHD = fd1x2x6;
-using namespace FD2 = FDHD;
+namespace FDHD = fd1x2x6;
+namespace FD2 = FDHD;
 
 } // namespace beam
 } // namespace sel
