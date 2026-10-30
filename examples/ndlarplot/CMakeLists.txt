@@ -1,9 +1,10 @@
 add_executable(NDLAr_NumuCCContained_LongestTrack NDLAr_NumuCCContained_LongestTrack.cxx)
-target_link_libraries(NDLAr_NumuCCContained_LongestTrack duneanasel::all)
-
+target_link_libraries(NDLAr_NumuCCContained_LongestTrack
+  duneanasel::all duneanaobj::StandardRecordProxy)
 
 add_executable(NDLAr_NumuCCContained_VtxPosition NDLAr_NumuCCContained_VtxPosition.cxx)
-target_link_libraries(NDLAr_NumuCCContained_VtxPosition duneanasel::all)
+target_link_libraries(NDLAr_NumuCCContained_VtxPosition
+  duneanasel::all duneanaobj::StandardRecordProxy)
 
 install(TARGETS
   NDLAr_NumuCCContained_LongestTrack
