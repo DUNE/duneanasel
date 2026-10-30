@@ -155,10 +155,6 @@ C++ Examples can be built by configuring like `cmake .. -Dduneanasel_build_examp
 
 The following sections give brief descriptions of the example usage contained in this repository.
 
-### Cut Motivation in python
-
-An example of using the [`SRProxy`]()-generated python bindings to perform a simple cut optimization in `pandas` can be found [here](examples/cut_optimization/fd/VDFDToySelections.ipynb).
-
 ### An application built by this project
 
 An example of using selections defined in this package to write an application that splits an incoming CAF TTree into separate TTree's based on the selection cuts that each entry passes can be found [here](examples/sample_separation/separate_FD_sample.cxx). This executable is built by this package as an example for how to add compiled code/applications to this repository.
@@ -168,7 +164,3 @@ An example of using selections defined in this package to write an application t
 ### An application built by a dependent project
 
 An example of an empty analysis loop exectuable with a minimal CMake build system can be found [here](examples/user_project). This directory should not be added to the main buildsystem used by this project, but can be used as a skeleton for new CMake projects that should depend on the selections and observables defined in this repository.
-
-### Fiducial volume cuts and summary files for analysis software
-
-Another example of using the `SRProxy` python bindings (`pySRProxy`). This example applies some cuts with `pandas` and then outputs a root file using `uproot` that could be used as input to the [MaCh3](https://github.com/mach3-software/MaCh3) analysis software.
