@@ -15,11 +15,14 @@
 #ifndef NU_MU_CC0PI_FUNCTIONS_H
 #define NU_MU_CC0PI_FUNCTIONS_H
 
-#include "duneanaobj/StandardRecord/Proxy/SRProxy.h"
+//#include "duneanaobj/StandardRecord/Proxy/SRProxy.h"
+//#include "duneanaobj/StandardRecord"
+#include "NDLAr_Geometry.h"
+//#include "CAFAna/Core/Var.h"
 
 namespace ana{
 
-namespace NDLArFunctions {
+namespace NDLArFunctions{
 
 //////////////////////////////////////////////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////////////////////////////////////////////
@@ -87,6 +90,304 @@ bool ProducesZeroPions(const caf::SRInteractionProxy* sr)
     return nPions == 0;
 }
 
+
+/*
+bool RecoParticleContainment(const caf::SRInteractionProxy* sr)
+{   //define crop for containment 
+    double outer_x_high = 10.0;
+    double outer_x_low = 10.0;
+    double outer_y_high = 10.0;
+    double outer_y_low = 10.0;  
+    double outer_z_high = 10.0;
+    double outer_z_low = 10.0;
+
+    for (const auto& p : sr->part.dlp){
+
+        double trackstartX = p.start.x;
+        double trackstartY = p.start.y;
+        double trackstartZ = p.start.z;
+
+        double trackendX = p.end.x;
+        double trackendY = p.end.y;
+        double trackendZ = p.end.z; 
+        
+        if (p.primary == 1 && p.pdg == 13){
+
+            //use outerfiducial volume function to check containment in X and Y, but not Z for primary muons
+            return NDLArGeo::IsInOuterFiducialVolume(trackstartX, trackstartY, trackstartZ, outer_x_high, outer_x_low, 
+                                                  outer_y_high, outer_y_low, 
+                                                  0.0, outer_z_low) && 
+                   NDLArGeo::IsInOuterFiducialVolume(trackendX, trackendY, trackendZ, outer_x_high, outer_x_low, 
+                                                  outer_y_high, outer_y_low, 
+                                                  0.0, outer_z_low);
+        }
+
+        else{
+            //use outerfiducial volume function to check containment in X, Y and Z for all other particles
+            return NDLArGeo::IsInOuterFiducialVolume(trackstartX, trackstartY, trackstartZ, outer_x_high, outer_x_low, 
+                                                  outer_y_high, outer_y_low, 
+                                                  outer_z_high, outer_z_low) && 
+                   NDLArGeo::IsInOuterFiducialVolume(trackendX, trackendY, trackendZ, outer_x_high, outer_x_low, 
+                                                  outer_y_high, outer_y_low, 
+                                                  outer_z_high, outer_z_low);
+        }
+    }
+}
+*/
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//Containemnt:
+
+//function for checking original object type:
+std::string PrintRecoObjType(int t){
+    //caf::SRRecoBaseID::SRRecoBaseCollectionType t){
+  switch(t){
+    case 1://caf::SRRecoBaseID::kNDLArDLPShower:
+      return "kNDLArDLPShower";
+    case 2://caf::SRRecoBaseID::kNDLArDLPTrack:
+      return "kNDLArDLPTrack";
+    default:
+      return std::string("Unknown:") + std::to_string(int(t));
+  }
+}
+
+
+
+
+// Attempting to create a function for containment:
+// loop over each interaction:
+//       loop over each particle in the interaction:
+//          contain in X
+//          contain in Y
+//          check if the particle is a primary muon (pdg = 13, primary = 1):
+//          if yes, continue (no downstream containment )
+//          if no, contain in Z
+
+
+
+enum containment_category {
+    kcont, kuncontained_back, kuncontained};
+
+
+containment_category Containment(const caf::SRRecoParticleProxy& p){
+    double outer_x_high = 10.0;
+    double outer_x_low = 10.0;
+    double outer_y_high = 10.0;
+    double outer_y_low = 10.0; 
+    double outer_z_high = 10.0;
+    double outer_z_low = 10.0;
+
+    double trackstartX = p.start.x;
+    double trackstartY = p.start.y;
+    double trackstartZ = p.start.z;
+
+    double trackendX = p.end.x;
+    double trackendY = p.end.y;
+    double trackendZ = p.end.z; 
+
+    bool ndlarcont =  NDLArGeo::IsInOuterFiducialVolume(trackstartX, trackstartY, trackstartZ, outer_x_high, outer_x_low, 
+                                                  outer_y_high, outer_y_low, 
+                                                  outer_z_high, outer_z_low) && 
+                      NDLArGeo::IsInOuterFiducialVolume(trackendX, trackendY, trackendZ, outer_x_high, outer_x_low, 
+                                                  outer_y_high, outer_y_low, 
+                                                  outer_z_high, outer_z_low);
+    if(ndlarcont){
+        return kcont;
+    } 
+    bool cont_with_zero_backface_cut =  NDLArGeo::IsInOuterFiducialVolume(trackstartX, trackstartY, trackstartZ, outer_x_high, outer_x_low, 
+                                                  outer_y_high, outer_y_low, 
+                                                  -100.0, outer_z_low) && 
+                   NDLArGeo::IsInOuterFiducialVolume(trackendX, trackendY, trackendZ, outer_x_high, outer_x_low, 
+                                                  outer_y_high, outer_y_low, 
+                                                  -100.0, outer_z_low);
+    if(cont_with_zero_backface_cut){
+    return kuncontained_back;
+    }
+    return kuncontained;
+    
+}
+
+
+//Original function for containment which at the moment is failing
+
+bool NumuCC0PiPartContainment(const caf::SRInteractionProxy* sr)
+{   //define crop for containment 
+   
+    for (const auto& p : sr->part.dlp){
+
+        auto cont = Containment(p);
+        if (p.primary == 1 && p.pdg == 13){
+            if(cont == kuncontained){
+                return false;
+            }
+        } else if(cont != kcont){
+            return false;
+        }
+    }
+    return true;
+}
+//split into non-muon containment (bottom bit)
+//muon containement (back face OR contained)
+
+//function for all non-muon particle containement 
+bool NonMuonsContained(const caf::SRInteractionProxy* sr)
+{
+    for (const auto& p : sr->part.dlp)
+    {
+        //skip primary muons
+        //if(p.primary == 1 && p.pdg == 13){
+         //   continue;
+       //}
+
+        //if ((p.pdg == 22 || p.pdg == 11) && (p.end.x <= -1000 && p.end.y<= -1000 && p.end.z<= -1000))
+        //{continue;}
+        if (p.primary == 1 && p.pdg != 13)
+        {
+
+            auto cont = Containment(p);
+            if (cont != kcont) {
+                return false; //non muon particle escaping the volume fails the cut 
+            }
+         }
+    }
+    return true;
+
+}
+
+//non muon TRACK type objects contained 
+bool NonMuonsTRACKContained(const caf::SRInteractionProxy* sr)
+{
+    for (const auto& p : sr->part.dlp)
+    {
+        //skip primary muons
+        //if(p.primary == 1 && p.pdg == 13){
+         //   continue;
+       //}
+        //if ((p.pdg == 22 || p.pdg == 11) && (p.end.x <= -1000 && p.end.y<= -1000 && p.end.z<= -1000))
+        //{continue;}
+
+        //function that returns string output of "PrintRecoObjType", defined above this 
+        //std::string reco_type_str = PrintRecoObjType(p.type);
+            //p.recoobj.type.GetValue());
+        // if the particle is a primary, is NOT. muon, and is a Track type
+        //if (p.primary == 1 && p.pdg != 13 && (reco_type_str.find("kNDLArDLPTrack") != std::string::npos))
+        if (p.primary == 1 && p.pdg != 13 && std::abs(p.pdg) != 11 && std::abs(p.pdg) != 22)
+        {
+
+            auto cont = Containment(p);
+            if (cont != kcont) {
+                return false; //non muon particle escaping the volume fails the cut 
+            }
+         }
+    }
+    return true;
+
+}
+
+bool NonMuonsSHOWERContained(const caf::SRInteractionProxy* sr)
+{
+    for (const auto& p : sr->part.dlp)
+    {
+        //skip primary muons
+        //if(p.primary == 1 && p.pdg == 13){
+         //   continue;
+       //}
+        //if ((p.pdg == 22 || p.pdg == 11) && (p.end.x <= -1000 && p.end.y<= -1000 && p.end.z<= -1000))
+        //{continue;}
+
+        //function that returns string output of "PrintRecoObjType", defined above this 
+        //std::string reco_type_str = PrintRecoObjType(p.type);
+            //p.recoobj.type.GetValue());
+        // if the particle is a primary, is NOT. muon, and is a Track type
+        //if (p.primary == 1 && p.pdg != 13 && (reco_type_str.find("kNDLArDLPShower") != std::string::npos))
+        if (p.primary == 1 && p.pdg != 13 && (std::abs(p.pdg) == 11 || std::abs(p.pdg) == 22))
+        {
+
+            auto cont = p.contained;
+            if (cont != 1) {
+                return false; //non muon particle escaping the volume fails the cut 
+            }
+         }
+    }
+    return true;
+
+}
+
+
+
+
+
+//function for checking primary muons are contained BUT can escape DS
+bool PrimaryMuonContained(const caf::SRInteractionProxy* sr)
+{
+    for (const auto& p : sr->part.dlp)
+    {
+        if(p.primary ==1 && p.pdg == 13)
+        {
+            auto cont = Containment(p);
+
+            //If the primary muon is completely uncontained, reject
+            if(cont == kuncontained){
+                return false;
+            }
+            //kcont or kuncontained_back are both allowed
+        }
+    }
+    return true;
+}
+
+
+
+bool NoShowersInteractions(const caf::SRInteractionProxy* sr)
+{
+    for (const auto& p : sr->part.dlp)
+    {//p.primary == 1 && p.recoobj.type != caf::SRRecoBaseID::kNDLArDLPTrack
+        //if (p.primary == 1 && p.type !=2 ){
+        if (p.primary == 1 && (std::abs(p.pdg) == 11 || std::abs(p.pdg) == 22)) {
+            return false;
+        }
+    }
+    return true;
+}
+/*
+//change name to reflect what it does
+std::array<caf::SRVector3D,2> FindInteractionBoxCorners(const caf::SRInteractionProxy* sr, double Containment_crop)
+{
+
+    if (!sr || sr->part.dlp.empty()) {
+        return {caf::SRVector3D{0, 0, 0}, caf::SRVector3D{0, 0, 0}};
+
+        // Initialize mins to max possible value, maxs to lowest possible value
+    double x_min = std::numeric_limits<double>::max();
+    double x_max = std::numeric_limits<double>::lowest();
+    double y_min = std::numeric_limits<double>::max();
+    double y_max = std::numeric_limits<double>::lowest();
+    double z_min = std::numeric_limits<double>::max();
+    double z_max = std::numeric_limits<double>::lowest();
+    
+    
+    for(const auto& p : sr->part.dlp)
+    {
+        if(p.primary ==1 && p.pdg == 13){
+            continue;
+        }
+        // Compare against both start and end points for X, Y, and Z
+        x_min = std::min({x_min, p.start.x, p.end.x});
+        x_max = std::max({x_max, p.start.x, p.end.x});
+
+        y_min = std::min({y_min, p.start.y, p.end.y});
+        y_max = std::max({y_max, p.start.y, p.end.y});
+
+        z_min = std::min({z_min, p.start.z, p.end.z});
+        z_max = std::max({z_max, p.start.z, p.end.z});
+    }
+    return {caf::SRVector3D{x_min,y_min,z_min},
+             caf::SRVector3D{x_max,y_max,z_max}};
+    };
+}
+*/
+
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //TRUTH functions, used for identifying true signal and background contaminants in the selection
@@ -96,16 +397,98 @@ bool ProducesZeroPions(const caf::SRInteractionProxy* sr)
 //check true FV position
 bool InFVTrue (const caf::SRTrueInteractionProxy* sr){
 
-  const std::vector<double> kDefaultBoxMargins = {5.0, 5.0, 5.0}; //in cm
-  const std::vector<double> kDefaultAVMargins = {25.0, 25.0, 25.0}; // in cm
+  //const std::vector<double> kDefaultBoxMargins = {5.0, 5.0, 5.0}; //in cm
+  //const std::vector<double> kDefaultAVMargins = {25.0, 25.0, 25.0}; // in cm
+
+    double outer_x_high = 0.0;
+    double outer_x_low = 0.0;
+    double outer_y_high = 0.0;
+    double outer_y_low = 0.0;  
+    double outer_z_high = 0.0;
+    double outer_z_low = 0.0;
+
+    //TPC uniform crop
+    const double kDefaultTPCMargin = 0.0; // in cm
+
 
     double x = sr->vtx.x;
     double y = sr->vtx.y;
     double z = sr->vtx.z;
 
-  return NDLArGeo::IsInCombinedNDLArFV(x, y, z, kDefaultBoxMargins, kDefaultAVMargins);
+    
+
+  return NDLArGeo::IsInCombinedNDLArFV(x, y, z, outer_x_high, outer_x_low, 
+                                                outer_y_high, outer_y_low, 
+                                                outer_z_high, outer_z_low, 
+                                                kDefaultTPCMargin);
 
 }
+
+//particle containment 
+/*
+enum containment_category_truth {
+    kcont_truth, kuncontained_back_truth, kuncontained_truth};
+
+
+containment_category_truth Containment_truth(const caf::SRTrueParticleProxy& p){
+    double outer_x_high = 10.0;
+    double outer_x_low = 10.0;
+    double outer_y_high = 10.0;
+    double outer_y_low = 10.0; 
+    double outer_z_high = 10.0;
+    double outer_z_low = 10.0;
+
+    double trackstartX = p.start_pos.x;
+    double trackstartY = p.start_pos.y;
+    double trackstartZ = p.start_pos.z;
+
+    double trackendX = p.end_pos.x;
+    double trackendY = p.end_pos.y;
+    double trackendZ = p.end_pos.z; 
+
+    bool ndlarcont =  NDLArGeo::IsInOuterFiducialVolume(trackstartX, trackstartY, trackstartZ, outer_x_high, outer_x_low, 
+                                                  outer_y_high, outer_y_low, 
+                                                  outer_z_high, outer_z_low) && 
+                      NDLArGeo::IsInOuterFiducialVolume(trackendX, trackendY, trackendZ, outer_x_high, outer_x_low, 
+                                                  outer_y_high, outer_y_low, 
+                                                  outer_z_high, outer_z_low);
+    if(ndlarcont){
+        return kcont_truth;
+    } 
+    bool cont_with_zero_backface_cut =  NDLArGeo::IsInOuterFiducialVolume(trackstartX, trackstartY, trackstartZ, outer_x_high, outer_x_low, 
+                                                  outer_y_high, outer_y_low, 
+                                                  0.0, outer_z_low) && 
+                   NDLArGeo::IsInOuterFiducialVolume(trackendX, trackendY, trackendZ, outer_x_high, outer_x_low, 
+                                                  outer_y_high, outer_y_low, 
+                                                  0.0, outer_z_low);
+    if(cont_with_zero_backface_cut){
+    return kuncontained_back_truth;
+    }
+    return kuncontained_truth;
+    
+}
+
+
+bool NumuCC0PiPartContainmentTruth(const caf::SRTrueInteractionProxy* truth)
+{   //define crop for containment 
+   
+    for (const auto& p : truth->prim){
+
+        auto cont = Containment_truth(p);
+        if (p.pdg == 13){
+            if(cont == kuncontained_truth){
+                return false;
+            }
+        } else if(cont != kcont_truth){
+            return false;
+        }
+    }
+    return true;
+}
+
+
+
+*/
 
 //check true muon track length
 bool PrimaryTrueMuonHasMinimumTrackLength(const caf::SRTrueInteractionProxy* truth)
@@ -152,7 +535,7 @@ const caf::SRTrueInteractionProxy* GetTruthMatch(const caf::SRInteractionProxy* 
     return &proxy->mc.nu[sr->truth[tidx]];
 }
 
-//enumerates the interaction type
+//enumerates the interaction type 
 enum TruthInteractionType {
     kNuMuCC0PiFV = 0,
     kNuMuCCnPiFV = 1,
@@ -162,8 +545,27 @@ enum TruthInteractionType {
     kNuECCinc    = 5,
     kNuEBarCCinc = 6,
     kNoMatch     = 7,
-    kUncatagorisable = 8
+    kUncatagorisable = 8,
+    kNTypes = 9
 };
+
+std::string TruthInteractionTypeToString(TruthInteractionType tit){
+    switch(tit){
+        case kNuMuCC0PiFV: return "NuMuCC0PiFV";
+        case kNuMuCCnPiFV: return "NuMuCCnPiFV";
+        case kNuMu_NuMuBarCCincOOFV: return "NuMu_NuMuBarCCincOOFV";
+        case kNCinc: return "NCinc";
+        case kNuMuBarCCincFV: return "NuMuBarCCincFV";
+        case kNuECCinc: return "NuECCinc";
+        case kNuEBarCCinc: return "NuEBarCCinc";
+        case kNoMatch: return "NoMatch";
+        case kUncatagorisable: return "Uncatagorisable";
+        default: return "Unknown";
+    }
+}
+std::string TruthInteractionTypeToString(int tit){
+    return TruthInteractionTypeToString(TruthInteractionType(tit));
+}
 
 
 
@@ -173,7 +575,7 @@ enum TruthInteractionType {
 
 
 //generate Var enumerates to correct interaction type 
-const Var GetTruthInteractionType([](const caf::SRInteractionProxy* sr) -> double { 
+inline double GetTruthInteractionType(const caf::SRInteractionProxy* sr){ 
     const caf::SRTrueInteractionProxy* truthInt = GetTruthMatch(sr);
     if (!truthInt) 
         return static_cast<double>(kNoMatch);
@@ -188,6 +590,7 @@ const Var GetTruthInteractionType([](const caf::SRInteractionProxy* sr) -> doubl
     const bool inFV =
             InFVTrue(truthInt);
     
+  
     const bool zeroPi = (truthInt->npip == 0 && truthInt->npim == 0 && truthInt->npi0 == 0);
 
     const bool hasLongMuon = PrimaryTrueMuonHasMinimumTrackLength(truthInt);
@@ -214,11 +617,13 @@ const Var GetTruthInteractionType([](const caf::SRInteractionProxy* sr) -> doubl
             if(!inFV && hasLongMuon){
                 return static_cast<double>(kNuMu_NuMuBarCCincOOFV);
             }
-            // nu_mu CC 0Pi with a truth muon track >= 20 cm
+            // nu_mu CC 0Pi with a truth muon track >= 20 cm AND particles contained/ muons DS
             if(zeroPi && hasLongMuon){
                 return static_cast<double>(kNuMuCC0PiFV);
+                
+            
             }
-            //nu_mu CC with at least one pion
+            //nu_mu CC with at least one pions
             else if(nPi){
 
                 return static_cast<double>( kNuMuCCnPiFV);
@@ -273,7 +678,7 @@ const Var GetTruthInteractionType([](const caf::SRInteractionProxy* sr) -> doubl
         return static_cast<double>(kUncatagorisable);
     }
 
-});
+}
 
 
     

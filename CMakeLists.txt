@@ -19,100 +19,38 @@ find_program(CMAKE_CXX_COMPILER NAMES $ENV{CXX} g++ PATHS ENV PATH NO_DEFAULT_PA
 
 LIST(APPEND CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake/Modules)
 
-# download CPM.cmake
-file(
-  DOWNLOAD
-  https://github.com/cpm-cmake/CPM.cmake/releases/download/v0.40.2/CPM.cmake
-  ${CMAKE_CURRENT_BINARY_DIR}/cmake/CPM.cmake
-)
-include(${CMAKE_CURRENT_BINARY_DIR}/cmake/CPM.cmake)
-
-option(duneanasel_USE_UPS_duneanaobj "Whether to build proxy classes for Standard Record objects" OFF)
 option(duneanasel_build_examples "Whether to build examples" OFF)
-option(duneanasel_USE_SRProxy "Whether to build proxy classes for Standard Record objects" ON)
-option(duneanasel_SRProxy_PYTHON_ENABLED "Whether to build python bindings for proxy classes" OFF)
 
 find_package(ROOT 6 REQUIRED)
 
-if(duneanasel_USE_UPS_duneanaobj)
-  find_package(duneanaobj REQUIRED)
+if(NOT DEFINED DUNE_ANAOBJ_BRANCH)
+  SET(DUNE_ANAOBJ_BRANCH v04_02_01)
+endif()
 
-  if(NOT TARGET duneanaobj::StandardRecordProxy)
-    message(FATAL_ERROR "duneanasel_USE_UPS_duneanaobj was specified but version of duneanaobj found didn't export target duneanaobj::StandardRecordProxy")
-  endif()
-
-  message(STATUS "Found duneanaobj in ${duneanaobj_SOURCE}.")
-  add_library(duneanaobj_all INTERFACE)
-  target_link_libraries(duneanaobj_all INTERFACE duneanaobj::StandardRecordProxy duneanaobj::StandardRecordFlat)
-  if(NOT DEFINED ENV{SRPROXY_INC})
-    message(FATAL_ERROR "Attempting to use UPS distribution of duneanaobj but SRPROXY_INC is not defined in the environment.")
-  endif()
-  target_include_directories(duneanaobj_all INTERFACE $ENV{SRPROXY_INC})
-  add_library(duneanaobj::all ALIAS duneanaobj_all)
-elseif(duneanasel_USE_SRProxy)
- find_package(duneanaobj 4 QUIET)
- if(NOT duneanaobj_FOUND)
-    CPMFindPackage(
-      NAME duneanaobj
-      GIT_TAG feature/Clingification_rebase2024
-      GITHUB_REPOSITORY luketpickering/duneanaobj
-      VERSION 4.0.0
-      OPTIONS
-        "duneanaobj_PYTHON_ENABLED" "${duneanasel_SRProxy_PYTHON_ENABLED}"
+find_package(duneanaobj 4 QUIET)
+if(NOT duneanaobj_FOUND)
+  include(FetchContent)
+  FetchContent_Declare(
+      SRProxy
+      GIT_REPOSITORY https://github.com/luketpickering/SRProxy.git
+      GIT_TAG        feature/Clingification_rebase3
     )
-  endif()
-
-  if(NOT TARGET duneanaobj::all)
-    message(FATAL_ERROR "duneanasel Expected dependency target: duneanaobj::all")
-  endif()
-else()
-  if(NOT DEFINED DUNE_ANAOBJ_BRANCH OR "${DUNE_ANAOBJ_BRANCH}x" STREQUAL "x")
-    set(DUNE_ANAOBJ_BRANCH v03_06_01)
-  endif()
-  CPMAddPackage(
-    NAME duneanaobj
-    GIT_TAG ${DUNE_ANAOBJ_BRANCH}
-    GITHUB_REPOSITORY DUNE/duneanaobj
-    DOWNLOAD_ONLY YES
-  )
-  include_directories(${duneanaobj_SOURCE_DIR})
-
-  ROOT_GENERATE_DICTIONARY(StandardRecordDict
-    ${duneanaobj_SOURCE_DIR}/duneanaobj/StandardRecord/StandardRecord.h
-    LINKDEF
-      ${duneanaobj_SOURCE_DIR}/duneanaobj/StandardRecord/classes_def.xml)
-
-  file(GLOB SR_IMPL_FILES "${duneanaobj_SOURCE_DIR}/duneanaobj/StandardRecord/*.cxx")
-  LIST(APPEND SR_IMPL_FILES ${CMAKE_CURRENT_BINARY_DIR}/StandardRecordDict.cxx)
-
-  add_library(duneanaobj_StandardRecord SHARED ${SR_IMPL_FILES})
-  target_link_libraries(duneanaobj_StandardRecord PUBLIC ROOT::MathCore)
-
-  target_include_directories(duneanaobj_StandardRecord PUBLIC
-    $<BUILD_INTERFACE:${duneanaobj_SOURCE_DIR}>
-    $<INSTALL_INTERFACE:include>)
-  target_include_directories(duneanaobj_StandardRecord PRIVATE
-    $<BUILD_INTERFACE:${duneanaobj_SOURCE_DIR}/duneanaobj/StandardRecord> #root puts this in the dictionary
+  FetchContent_Declare(
+      duneanaobj
+      GIT_REPOSITORY https://github.com/DUNE/duneanaobj.git
+      GIT_TAG        ${DUNE_ANAOBJ_BRANCH}
     )
+  SET(SKIP_CET ON)
+  FetchContent_MakeAvailable(SRProxy duneanaobj)
+endif()
 
-  set_target_properties(duneanaobj_StandardRecord PROPERTIES EXPORT_NAME all)
-  install(TARGETS duneanaobj_StandardRecord EXPORT duneanasel-targets DESTINATION lib)
-
-  file(GLOB SR_HEADER_FILES "${duneanaobj_SOURCE_DIR}/duneanaobj/StandardRecord/*.h")
-
-  install(FILES ${SR_HEADER_FILES} DESTINATION include/duneanaobj/StandardRecord)
-  install(FILES
-    ${CMAKE_CURRENT_BINARY_DIR}/libStandardRecordDict_rdict.pcm
-    ${CMAKE_CURRENT_BINARY_DIR}/libStandardRecordDict.rootmap
-    DESTINATION lib)
-
-  add_library(duneanaobj::all ALIAS duneanaobj_StandardRecord)
-
+if(NOT TARGET duneanaobj::StandardRecord)
+  message(FATAL_ERROR "duneanasel Expected dependency target: duneanaobj::StandardRecord")
 endif()
 
 add_library(duneanasel_all INTERFACE)
 
-target_link_libraries(duneanasel_all INTERFACE duneanaobj::all)
+target_link_libraries(duneanasel_all INTERFACE duneanaobj::StandardRecord)
 target_include_directories(duneanasel_all INTERFACE
   $<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}>
   $<INSTALL_INTERFACE:include>)

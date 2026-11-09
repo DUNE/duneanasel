@@ -22,13 +22,6 @@ namespace NDLArGeo {
         }
     };
 
-    //define the outer boundaries of the detector volume (in cm)
-    const double NDLArXLo = -346.9;
-    const double NDLArXHi = 346.9;
-    const double NDLArYLo = -215.5;
-    const double NDLArYHi = 81.7;
-    const double NDLArZLo = 418.2;
-    const double NDLArZHi = 913.3;
 
     // define the full TPC Dimensions from YAML file
     const double TPC_DX = 46.788;
@@ -38,6 +31,27 @@ namespace NDLArGeo {
     const double HALF_DX = TPC_DX / 2.0;
     const double HALF_DY = TPC_DY / 2.0;
     const double HALF_DZ = TPC_DZ / 2.0;
+
+ /*
+    //old definitions for detector geometry 
+    //define the outer boundaries of the detector volume (in cm)
+    const double NDLArXLo = -346.9;
+    const double NDLArXHi = 346.9;
+    const double NDLArYLo = -215.5;
+    const double NDLArYHi = 81.7;
+    const double NDLArZLo = 418.2;
+    const double NDLArZHi = 913.3;
+    */
+
+
+ //new definitions for detector geometry, 
+ //using maximum boundaries of TPC modules
+    const double NDLArXLo = -276.2885 - HALF_DX;
+    const double NDLArXHi = 323.7115 + HALF_DX;
+    const double NDLArYLo = -66.8713 - HALF_DY;
+    const double NDLArYHi = -66.8713 + HALF_DY;
+    const double NDLArZLo = 465.7559 - HALF_DZ;
+    const double NDLArZHi = 865.7559 + HALF_DZ;
 
     // Center positions of all 70 TPCs [X, Y, Z]
     inline const std::vector<std::vector<double>> TPC_CENTERS = {
@@ -97,14 +111,16 @@ namespace NDLArGeo {
     }
 
     //construct the outer active volume as a box with the specified margins
-    inline Box GetOuterBox(double margin_x = 0.0, double margin_y = 0.0, double margin_z = 0.0) {
+    inline Box GetOuterBox(double margin_x_high = 0.0, double margin_x_low = 0.0,
+                           double margin_y_high = 0.0, double margin_y_low = 0.0, 
+                           double margin_z_high = 0.0, double margin_z_low=0.0 ) {
         Box outer_box;
-        outer_box.x_min = NDLArXLo + margin_x;
-        outer_box.x_max = NDLArXHi - margin_x;
-        outer_box.y_min = NDLArYLo + margin_y;
-        outer_box.y_max = NDLArYHi - margin_y;
-        outer_box.z_min = NDLArZLo + margin_z;
-        outer_box.z_max = NDLArZHi - margin_z - 100;
+        outer_box.x_min = NDLArXLo + margin_x_low;
+        outer_box.x_max = NDLArXHi - margin_x_high;
+        outer_box.y_min = NDLArYLo + margin_y_low;
+        outer_box.y_max = NDLArYHi - margin_y_high;
+        outer_box.z_min = NDLArZLo + margin_z_low;
+        outer_box.z_max = NDLArZHi - margin_z_high;
         return outer_box;
     }
 
@@ -113,16 +129,20 @@ namespace NDLArGeo {
 
     // Checks if position (x, y, z) is inside the outer active volume box
     inline bool IsInOuterFiducialVolume(double x, double y, double z, 
-                                        double margin_x = 0.0, double margin_y=0.0, double margin_z = 0.0){
+                                        double margin_x_high = 0.0, double margin_x_low = 0.0,
+                                        double margin_y_high=0.0, double margin_y_low=0.0,
+                                        double margin_z_high = 0.0, double margin_z_low = 0.0){
     
-    return GetOuterBox(margin_x, margin_y, margin_z).Contains(x, y, z);
+    return GetOuterBox(margin_x_high, margin_x_low, 
+                       margin_y_high, margin_y_low, 
+                       margin_z_high, margin_z_low).Contains(x, y, z);
     }
 
     // Checks if position (x, y, z) is inside any of the individual TPC boxes
     inline bool IsInBoxesFiducialVolume(double x, double y, double z, double margin_x = 0.0, double margin_y = 0.0, double margin_z = 0.0) {
         const std::vector<Box> boxes = GetTPCBoxes(margin_x, margin_y, margin_z);
         for (const auto& box : boxes) {
-            if (box.Contains(x, y, z)) { // here you want to insert a "&& AV conatins"
+            if (box.Contains(x, y, z)) { 
                 return true;
             }
         }
@@ -134,25 +154,34 @@ namespace NDLArGeo {
     //Function which takes the following inputs:
     //vertex position x, y, z
     //TPC box FV margins x, y, z
-    //Outer FV margins x, y, z
+    //Outer FV margins x, y, z, both high and low
 
     inline bool IsInCombinedNDLArFV(double x, double y, double z, 
-                                    const std::vector<double>& box_margins,
-                                    const std::vector<double>& outer_margins){
-        double o_mx = outer_margins.size() >0 ? outer_margins[0] : 0.0;
-        double o_my = outer_margins.size() >1 ? outer_margins[1] : 0.0;
-        double o_mz = outer_margins.size() >2 ? outer_margins[2] : 0.0;
+                                    double o_mx_high, double o_mx_low, 
+                                    double o_my_high, double o_my_low,
+                                    double o_mz_high, double o_mz_low,
+                                    double box_margin){
+       
 
-        if (!IsInOuterFiducialVolume(x, y, z, o_mx, o_my, o_mz)) return false;
+        if (!IsInOuterFiducialVolume(x, y, z,o_mx_high ,o_mx_low, o_my_high, o_my_low, o_mz_high, o_mz_low)) return false;
 
-        double b_mx = box_margins.size() > 0? box_margins[0] : 0.0;
-        double b_my = box_margins.size() > 1? box_margins[1] : 0.0;
-        double b_mz = box_margins.size() > 2? box_margins[2] : 0.0;
-
-        return IsInBoxesFiducialVolume(x, y, z, b_mx, b_my, b_mz);
+        
+        return IsInBoxesFiducialVolume(x, y, z, box_margin, box_margin, box_margin);
 
     }
 
+
+    inline bool BoxContainedInBox( double x_min, double y_min, double z_min,
+                                  double x_max, double y_max, double z_max,  double Containment_crop)
+    {
+        return (IsInOuterFiducialVolume(x_min,y_min,z_min,Containment_crop,Containment_crop,
+                                                          Containment_crop,Containment_crop,
+                                                          Containment_crop,Containment_crop ) 
+            &&IsInOuterFiducialVolume(x_max,y_max,z_max,  Containment_crop,Containment_crop,
+                                                          Containment_crop,Containment_crop,
+                                                          Containment_crop,Containment_crop ));
+    }
+    
 }
 }
 #endif // NDLARGEOMETRY_H
