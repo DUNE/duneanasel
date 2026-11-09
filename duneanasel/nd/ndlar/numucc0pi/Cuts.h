@@ -12,17 +12,13 @@
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-#ifndef NU_MU_CC0PI_FUNCTIONS_H
-#define NU_MU_CC0PI_FUNCTIONS_H
+#pragma once
 
-//#include "duneanaobj/StandardRecord/Proxy/SRProxy.h"
-//#include "duneanaobj/StandardRecord"
-#include "NDLAr_Geometry.h"
-//#include "CAFAna/Core/Var.h"
+#include "duneanasel/nd/ndlar/NDLAr_Geometry.h"
 
-namespace ana{
+#include "duneanaobj/StandardRecord/Proxy/SRProxy.h"
 
-namespace NDLArFunctions{
+namespace ana::numucc0pi {
 
 //////////////////////////////////////////////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////////////////////////////////////////////
@@ -58,10 +54,10 @@ bool PrimMuMinTrackLength(const caf::SRInteractionProxy* sr)
 
           double trackendX = p.end.x;
           double trackendY = p.end.y;
-          double trackendZ = p.end.z; 
+          double trackendZ = p.end.z;
 
           double tracklength = std::sqrt(std::pow((trackendX - trackstartX),2) + std::pow((trackendY - trackstartY),2) + std::pow((trackendZ - trackstartZ),2));
-        
+
           if (tracklength >= 20.0){
             return true;
           }
@@ -69,13 +65,13 @@ bool PrimMuMinTrackLength(const caf::SRInteractionProxy* sr)
             return false;
           }
       }
-       
+
     }
     return false;
 
 }
 
-// reco selection level 4 criteria 
+// reco selection level 4 criteria
 
 bool ProducesZeroPions(const caf::SRInteractionProxy* sr)
 {
@@ -93,11 +89,11 @@ bool ProducesZeroPions(const caf::SRInteractionProxy* sr)
 
 /*
 bool RecoParticleContainment(const caf::SRInteractionProxy* sr)
-{   //define crop for containment 
+{   //define crop for containment
     double outer_x_high = 10.0;
     double outer_x_low = 10.0;
     double outer_y_high = 10.0;
-    double outer_y_low = 10.0;  
+    double outer_y_low = 10.0;
     double outer_z_high = 10.0;
     double outer_z_low = 10.0;
 
@@ -109,26 +105,26 @@ bool RecoParticleContainment(const caf::SRInteractionProxy* sr)
 
         double trackendX = p.end.x;
         double trackendY = p.end.y;
-        double trackendZ = p.end.z; 
-        
+        double trackendZ = p.end.z;
+
         if (p.primary == 1 && p.pdg == 13){
 
             //use outerfiducial volume function to check containment in X and Y, but not Z for primary muons
-            return NDLArGeo::IsInOuterFiducialVolume(trackstartX, trackstartY, trackstartZ, outer_x_high, outer_x_low, 
-                                                  outer_y_high, outer_y_low, 
-                                                  0.0, outer_z_low) && 
-                   NDLArGeo::IsInOuterFiducialVolume(trackendX, trackendY, trackendZ, outer_x_high, outer_x_low, 
-                                                  outer_y_high, outer_y_low, 
+            return NDLArGeo::IsInOuterFiducialVolume(trackstartX, trackstartY, trackstartZ, outer_x_high, outer_x_low,
+                                                  outer_y_high, outer_y_low,
+                                                  0.0, outer_z_low) &&
+                   NDLArGeo::IsInOuterFiducialVolume(trackendX, trackendY, trackendZ, outer_x_high, outer_x_low,
+                                                  outer_y_high, outer_y_low,
                                                   0.0, outer_z_low);
         }
 
         else{
             //use outerfiducial volume function to check containment in X, Y and Z for all other particles
-            return NDLArGeo::IsInOuterFiducialVolume(trackstartX, trackstartY, trackstartZ, outer_x_high, outer_x_low, 
-                                                  outer_y_high, outer_y_low, 
-                                                  outer_z_high, outer_z_low) && 
-                   NDLArGeo::IsInOuterFiducialVolume(trackendX, trackendY, trackendZ, outer_x_high, outer_x_low, 
-                                                  outer_y_high, outer_y_low, 
+            return NDLArGeo::IsInOuterFiducialVolume(trackstartX, trackstartY, trackstartZ, outer_x_high, outer_x_low,
+                                                  outer_y_high, outer_y_low,
+                                                  outer_z_high, outer_z_low) &&
+                   NDLArGeo::IsInOuterFiducialVolume(trackendX, trackendY, trackendZ, outer_x_high, outer_x_low,
+                                                  outer_y_high, outer_y_low,
                                                   outer_z_high, outer_z_low);
         }
     }
@@ -174,7 +170,7 @@ containment_category Containment(const caf::SRRecoParticleProxy& p){
     double outer_x_high = 10.0;
     double outer_x_low = 10.0;
     double outer_y_high = 10.0;
-    double outer_y_low = 10.0; 
+    double outer_y_low = 10.0;
     double outer_z_high = 10.0;
     double outer_z_low = 10.0;
 
@@ -184,36 +180,36 @@ containment_category Containment(const caf::SRRecoParticleProxy& p){
 
     double trackendX = p.end.x;
     double trackendY = p.end.y;
-    double trackendZ = p.end.z; 
+    double trackendZ = p.end.z;
 
-    bool ndlarcont =  NDLArGeo::IsInOuterFiducialVolume(trackstartX, trackstartY, trackstartZ, outer_x_high, outer_x_low, 
-                                                  outer_y_high, outer_y_low, 
-                                                  outer_z_high, outer_z_low) && 
-                      NDLArGeo::IsInOuterFiducialVolume(trackendX, trackendY, trackendZ, outer_x_high, outer_x_low, 
-                                                  outer_y_high, outer_y_low, 
+    bool ndlarcont =  NDLArGeo::IsInOuterFiducialVolume(trackstartX, trackstartY, trackstartZ, outer_x_high, outer_x_low,
+                                                  outer_y_high, outer_y_low,
+                                                  outer_z_high, outer_z_low) &&
+                      NDLArGeo::IsInOuterFiducialVolume(trackendX, trackendY, trackendZ, outer_x_high, outer_x_low,
+                                                  outer_y_high, outer_y_low,
                                                   outer_z_high, outer_z_low);
     if(ndlarcont){
         return kcont;
-    } 
-    bool cont_with_zero_backface_cut =  NDLArGeo::IsInOuterFiducialVolume(trackstartX, trackstartY, trackstartZ, outer_x_high, outer_x_low, 
-                                                  outer_y_high, outer_y_low, 
-                                                  -100.0, outer_z_low) && 
-                   NDLArGeo::IsInOuterFiducialVolume(trackendX, trackendY, trackendZ, outer_x_high, outer_x_low, 
-                                                  outer_y_high, outer_y_low, 
+    }
+    bool cont_with_zero_backface_cut =  NDLArGeo::IsInOuterFiducialVolume(trackstartX, trackstartY, trackstartZ, outer_x_high, outer_x_low,
+                                                  outer_y_high, outer_y_low,
+                                                  -100.0, outer_z_low) &&
+                   NDLArGeo::IsInOuterFiducialVolume(trackendX, trackendY, trackendZ, outer_x_high, outer_x_low,
+                                                  outer_y_high, outer_y_low,
                                                   -100.0, outer_z_low);
     if(cont_with_zero_backface_cut){
     return kuncontained_back;
     }
     return kuncontained;
-    
+
 }
 
 
 //Original function for containment which at the moment is failing
 
 bool NumuCC0PiPartContainment(const caf::SRInteractionProxy* sr)
-{   //define crop for containment 
-   
+{   //define crop for containment
+
     for (const auto& p : sr->part.dlp){
 
         auto cont = Containment(p);
@@ -230,7 +226,7 @@ bool NumuCC0PiPartContainment(const caf::SRInteractionProxy* sr)
 //split into non-muon containment (bottom bit)
 //muon containement (back face OR contained)
 
-//function for all non-muon particle containement 
+//function for all non-muon particle containement
 bool NonMuonsContained(const caf::SRInteractionProxy* sr)
 {
     for (const auto& p : sr->part.dlp)
@@ -247,7 +243,7 @@ bool NonMuonsContained(const caf::SRInteractionProxy* sr)
 
             auto cont = Containment(p);
             if (cont != kcont) {
-                return false; //non muon particle escaping the volume fails the cut 
+                return false; //non muon particle escaping the volume fails the cut
             }
          }
     }
@@ -255,7 +251,7 @@ bool NonMuonsContained(const caf::SRInteractionProxy* sr)
 
 }
 
-//non muon TRACK type objects contained 
+//non muon TRACK type objects contained
 bool NonMuonsTRACKContained(const caf::SRInteractionProxy* sr)
 {
     for (const auto& p : sr->part.dlp)
@@ -267,7 +263,7 @@ bool NonMuonsTRACKContained(const caf::SRInteractionProxy* sr)
         //if ((p.pdg == 22 || p.pdg == 11) && (p.end.x <= -1000 && p.end.y<= -1000 && p.end.z<= -1000))
         //{continue;}
 
-        //function that returns string output of "PrintRecoObjType", defined above this 
+        //function that returns string output of "PrintRecoObjType", defined above this
         //std::string reco_type_str = PrintRecoObjType(p.type);
             //p.recoobj.type.GetValue());
         // if the particle is a primary, is NOT. muon, and is a Track type
@@ -277,7 +273,7 @@ bool NonMuonsTRACKContained(const caf::SRInteractionProxy* sr)
 
             auto cont = Containment(p);
             if (cont != kcont) {
-                return false; //non muon particle escaping the volume fails the cut 
+                return false; //non muon particle escaping the volume fails the cut
             }
          }
     }
@@ -296,7 +292,7 @@ bool NonMuonsSHOWERContained(const caf::SRInteractionProxy* sr)
         //if ((p.pdg == 22 || p.pdg == 11) && (p.end.x <= -1000 && p.end.y<= -1000 && p.end.z<= -1000))
         //{continue;}
 
-        //function that returns string output of "PrintRecoObjType", defined above this 
+        //function that returns string output of "PrintRecoObjType", defined above this
         //std::string reco_type_str = PrintRecoObjType(p.type);
             //p.recoobj.type.GetValue());
         // if the particle is a primary, is NOT. muon, and is a Track type
@@ -306,7 +302,7 @@ bool NonMuonsSHOWERContained(const caf::SRInteractionProxy* sr)
 
             auto cont = p.contained;
             if (cont != 1) {
-                return false; //non muon particle escaping the volume fails the cut 
+                return false; //non muon particle escaping the volume fails the cut
             }
          }
     }
@@ -365,8 +361,8 @@ std::array<caf::SRVector3D,2> FindInteractionBoxCorners(const caf::SRInteraction
     double y_max = std::numeric_limits<double>::lowest();
     double z_min = std::numeric_limits<double>::max();
     double z_max = std::numeric_limits<double>::lowest();
-    
-    
+
+
     for(const auto& p : sr->part.dlp)
     {
         if(p.primary ==1 && p.pdg == 13){
@@ -403,7 +399,7 @@ bool InFVTrue (const caf::SRTrueInteractionProxy* sr){
     double outer_x_high = 0.0;
     double outer_x_low = 0.0;
     double outer_y_high = 0.0;
-    double outer_y_low = 0.0;  
+    double outer_y_low = 0.0;
     double outer_z_high = 0.0;
     double outer_z_low = 0.0;
 
@@ -415,16 +411,16 @@ bool InFVTrue (const caf::SRTrueInteractionProxy* sr){
     double y = sr->vtx.y;
     double z = sr->vtx.z;
 
-    
 
-  return NDLArGeo::IsInCombinedNDLArFV(x, y, z, outer_x_high, outer_x_low, 
-                                                outer_y_high, outer_y_low, 
-                                                outer_z_high, outer_z_low, 
+
+  return NDLArGeo::IsInCombinedNDLArFV(x, y, z, outer_x_high, outer_x_low,
+                                                outer_y_high, outer_y_low,
+                                                outer_z_high, outer_z_low,
                                                 kDefaultTPCMargin);
 
 }
 
-//particle containment 
+//particle containment
 /*
 enum containment_category_truth {
     kcont_truth, kuncontained_back_truth, kuncontained_truth};
@@ -434,7 +430,7 @@ containment_category_truth Containment_truth(const caf::SRTrueParticleProxy& p){
     double outer_x_high = 10.0;
     double outer_x_low = 10.0;
     double outer_y_high = 10.0;
-    double outer_y_low = 10.0; 
+    double outer_y_low = 10.0;
     double outer_z_high = 10.0;
     double outer_z_low = 10.0;
 
@@ -444,34 +440,34 @@ containment_category_truth Containment_truth(const caf::SRTrueParticleProxy& p){
 
     double trackendX = p.end_pos.x;
     double trackendY = p.end_pos.y;
-    double trackendZ = p.end_pos.z; 
+    double trackendZ = p.end_pos.z;
 
-    bool ndlarcont =  NDLArGeo::IsInOuterFiducialVolume(trackstartX, trackstartY, trackstartZ, outer_x_high, outer_x_low, 
-                                                  outer_y_high, outer_y_low, 
-                                                  outer_z_high, outer_z_low) && 
-                      NDLArGeo::IsInOuterFiducialVolume(trackendX, trackendY, trackendZ, outer_x_high, outer_x_low, 
-                                                  outer_y_high, outer_y_low, 
+    bool ndlarcont =  NDLArGeo::IsInOuterFiducialVolume(trackstartX, trackstartY, trackstartZ, outer_x_high, outer_x_low,
+                                                  outer_y_high, outer_y_low,
+                                                  outer_z_high, outer_z_low) &&
+                      NDLArGeo::IsInOuterFiducialVolume(trackendX, trackendY, trackendZ, outer_x_high, outer_x_low,
+                                                  outer_y_high, outer_y_low,
                                                   outer_z_high, outer_z_low);
     if(ndlarcont){
         return kcont_truth;
-    } 
-    bool cont_with_zero_backface_cut =  NDLArGeo::IsInOuterFiducialVolume(trackstartX, trackstartY, trackstartZ, outer_x_high, outer_x_low, 
-                                                  outer_y_high, outer_y_low, 
-                                                  0.0, outer_z_low) && 
-                   NDLArGeo::IsInOuterFiducialVolume(trackendX, trackendY, trackendZ, outer_x_high, outer_x_low, 
-                                                  outer_y_high, outer_y_low, 
+    }
+    bool cont_with_zero_backface_cut =  NDLArGeo::IsInOuterFiducialVolume(trackstartX, trackstartY, trackstartZ, outer_x_high, outer_x_low,
+                                                  outer_y_high, outer_y_low,
+                                                  0.0, outer_z_low) &&
+                   NDLArGeo::IsInOuterFiducialVolume(trackendX, trackendY, trackendZ, outer_x_high, outer_x_low,
+                                                  outer_y_high, outer_y_low,
                                                   0.0, outer_z_low);
     if(cont_with_zero_backface_cut){
     return kuncontained_back_truth;
     }
     return kuncontained_truth;
-    
+
 }
 
 
 bool NumuCC0PiPartContainmentTruth(const caf::SRTrueInteractionProxy* truth)
-{   //define crop for containment 
-   
+{   //define crop for containment
+
     for (const auto& p : truth->prim){
 
         auto cont = Containment_truth(p);
@@ -510,185 +506,4 @@ bool PrimaryTrueMuonHasMinimumTrackLength(const caf::SRTrueInteractionProxy* tru
     return false;
 }
 
-
-//Returns truth matched interaction for a reco interaction input 
-const caf::SRTrueInteractionProxy* GetTruthMatch(const caf::SRInteractionProxy* sr)
-{
-    if (sr->truth.empty())
-        return nullptr;
-
-    // Find best-matched true interaction
-    size_t tidx = 0;
-    float maxOverlap = 0.0;
-
-    for (size_t i = 0; i < sr->truthOverlap.size(); ++i) {
-        if (sr->truthOverlap[i] > maxOverlap) {
-            maxOverlap = sr->truthOverlap[i];
-            tidx = i;
-        }
-    }
-
-    // Get ancestor SRProxy
-    const caf::SRProxy* proxy = sr->Ancestor<caf::SRProxy>();
-
-    // Return matched true interaction
-    return &proxy->mc.nu[sr->truth[tidx]];
-}
-
-//enumerates the interaction type 
-enum TruthInteractionType {
-    kNuMuCC0PiFV = 0,
-    kNuMuCCnPiFV = 1,
-    kNuMu_NuMuBarCCincOOFV = 2,
-    kNCinc       = 3,
-    kNuMuBarCCincFV = 4,
-    kNuECCinc    = 5,
-    kNuEBarCCinc = 6,
-    kNoMatch     = 7,
-    kUncatagorisable = 8,
-    kNTypes = 9
-};
-
-std::string TruthInteractionTypeToString(TruthInteractionType tit){
-    switch(tit){
-        case kNuMuCC0PiFV: return "NuMuCC0PiFV";
-        case kNuMuCCnPiFV: return "NuMuCCnPiFV";
-        case kNuMu_NuMuBarCCincOOFV: return "NuMu_NuMuBarCCincOOFV";
-        case kNCinc: return "NCinc";
-        case kNuMuBarCCincFV: return "NuMuBarCCincFV";
-        case kNuECCinc: return "NuECCinc";
-        case kNuEBarCCinc: return "NuEBarCCinc";
-        case kNoMatch: return "NoMatch";
-        case kUncatagorisable: return "Uncatagorisable";
-        default: return "Unknown";
-    }
-}
-std::string TruthInteractionTypeToString(int tit){
-    return TruthInteractionTypeToString(TruthInteractionType(tit));
-}
-
-
-
-
-
-
-
-
-//generate Var enumerates to correct interaction type 
-inline double GetTruthInteractionType(const caf::SRInteractionProxy* sr){ 
-    const caf::SRTrueInteractionProxy* truthInt = GetTruthMatch(sr);
-    if (!truthInt) 
-        return static_cast<double>(kNoMatch);
-
-    // ------------------
-    //basic truth info
-    //-------------------
-
-    const int nupdg = truthInt->pdg;
-    const bool nu_iscc = truthInt->iscc;
-
-    const bool inFV =
-            InFVTrue(truthInt);
-    
-  
-    const bool zeroPi = (truthInt->npip == 0 && truthInt->npim == 0 && truthInt->npi0 == 0);
-
-    const bool hasLongMuon = PrimaryTrueMuonHasMinimumTrackLength(truthInt);
-
-    const bool nPi = (truthInt->npip > 0 || truthInt->npim > 0 || truthInt->npi0 > 0);
-
-
-    //------------------------------
-    //NC check.
-    //------------------------------
-
-    if (!nu_iscc) {
-        return static_cast<double>(kNCinc);
-    }
-
-    //------------------------------
-    // nu_mu CC check
-    //------------------------------
-
-    else if (nupdg == 14) {
-
-
-            //nu_mu CC interaction outside the FV
-            if(!inFV && hasLongMuon){
-                return static_cast<double>(kNuMu_NuMuBarCCincOOFV);
-            }
-            // nu_mu CC 0Pi with a truth muon track >= 20 cm AND particles contained/ muons DS
-            if(zeroPi && hasLongMuon){
-                return static_cast<double>(kNuMuCC0PiFV);
-                
-            
-            }
-            //nu_mu CC with at least one pions
-            else if(nPi){
-
-                return static_cast<double>( kNuMuCCnPiFV);
-            }
-
-            else {
-                //nu_mu CC in FV by not nPi
-                //this catches 0Pi as well as anything unusual
-                return static_cast<double>(kUncatagorisable);
-            }
-
-    }
-
-    //------------------------------
-    //anti-nu_mu cc
-    //------------------------------
-
-    else if (nupdg == -14) {
-
-            if (!inFV && hasLongMuon) {
-                return static_cast<double>(kNuMu_NuMuBarCCincOOFV);
-            }
-        
-        //anti-nu_mu CC inside FV
-        return static_cast<double >(kNuMuBarCCincFV);
-
-
-    }
-
-    //------------------------------
-    //nu_e CC check
-    //------------------------------
-
-
-    else if (nupdg == 12) {
-            return static_cast<double>(kNuECCinc);
-    }   
-
-
-    //------------------------------
-    //anti-nu_e CC check
-    //------------------------------
-
-    else if(nupdg == -12){
-            return static_cast<double>(kNuEBarCCinc);
-    }
-
-    //-----------------------------
-    //if we get here, we have a CC interaction that is not nu_mu or nu
-    //-----------------------------
-    else{
-        return static_cast<double>(kUncatagorisable);
-    }
-
-}
-
-
-    
-
-
-
-
-} // namespace NDLArFunctions
 } // namespace ana
-#endif // NU_MU_CC0PI_FUNCTIONS_H
-
-
-
