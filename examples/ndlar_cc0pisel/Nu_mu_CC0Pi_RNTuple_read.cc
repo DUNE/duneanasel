@@ -37,7 +37,7 @@
 #include "duneanaobj/StandardRecord/StandardRecord.h"
 
 // 3. duneanasel Headers
-#include "duneanasel/nd/ndlar/Nu_muCC0Pi.h"
+#include "duneanasel/nd/ndlar/numucc0pi/Cuts.h"
 #include "duneanasel/common/TruthTools.h"
 
 #include "duneanasel/nd/ndlar/NDLAr_Geometry.h"
@@ -54,7 +54,7 @@ int main(int argc, char* argv[]){
 
     auto reader = ROOT::RNTupleReader::Open("myNTuple", "output_optimization_ntuple_2.root");
 
-// bind views to all stored fields 
+// bind views to all stored fields
 auto rEventId       = reader->GetView<int>("event_id");
 auto rInteractionId = reader->GetView<int>("interaction_id");
 auto rTruthCat      = reader->GetView<int>("truth_category");
@@ -107,16 +107,16 @@ long long total_true_signal = 0;
     double best_pur = 0.0;
 
     std::cout << std::string(75, '=') << "\n";
-    std::cout << std::left 
-              << std::setw(15) << "FV Margin (cm)" 
+    std::cout << std::left
+              << std::setw(15) << "FV Margin (cm)"
               << std::setw(15) << "Min Mu Length (cm)"
-              << std::setw(15) << "Efficiency" 
-              << std::setw(15) << "Purity" 
-              << std::setw(15) << "Eff * Pur" 
+              << std::setw(15) << "Efficiency"
+              << std::setw(15) << "Purity"
+              << std::setw(15) << "Eff * Pur"
               << "\n";
     std::cout << std::string(60, '-') << "\n";
 
-    //set default mu_length for stage 1     
+    //set default mu_length for stage 1
     const double default_mu_len = 20.0;
 
     for (double margin : Margin_vals){
@@ -130,26 +130,26 @@ long long total_true_signal = 0;
             auto bmin = rBoxMin(i);
             auto bmax = rBoxMax(i);
 
-            bool passes_margin = ana::NDLArGeo::BoxContainedInBox(bmin.X(), bmin.Y(), bmin.Z(), 
+            bool passes_margin = ana::NDLArGeo::BoxContainedInBox(bmin.X(), bmin.Y(), bmin.Z(),
                                                                 bmax.X(), bmax.Y(), bmax.Z(), margin);
 
             if (!passes_margin) continue;
 
             auto mstart = rMuonStart(i);
             auto mend = rMuonEnd(i);
-            double mu_len = std::sqrt(std::pow(mend.X() - mstart.X(), 2) + 
-                                      std::pow(mend.Y() - mstart.Y(), 2) + 
+            double mu_len = std::sqrt(std::pow(mend.X() - mstart.X(), 2) +
+                                      std::pow(mend.Y() - mstart.Y(), 2) +
                                       std::pow(mend.Z() - mstart.Z(), 2));
             if (mu_len < default_mu_len) continue;
 
             passed_total++;
             if (rTruthCat(i) == 0) passed_signal++;
         }
-        double Eff = static_cast<double>(passed_signal) / total_true_signal; 
+        double Eff = static_cast<double>(passed_signal) / total_true_signal;
         double Purity = (passed_total > 0) ? static_cast<double>(passed_signal) / passed_total :0.0 ;
         double metric = Eff * Purity ;
 
-        std::cout << std::left 
+        std::cout << std::left
                     << std::setw(15) << std::fixed << std::setprecision(1) << margin
                     << std::setw(15) << std::setprecision(4) << Eff
                     << std::setw(15) << std::setprecision(4) << Purity
@@ -171,16 +171,16 @@ long long total_true_signal = 0;
     std::cout << "=========================================================\n";
     std::cout << "STAGE 2: 1D Scan for Optimal Min Muon Length (Locked Margin = " << best_margin << " cm)\n";
     std::cout << "=========================================================\n";
-    std::cout << std::left 
+    std::cout << std::left
               << std::setw(20) << "Min Mu Length (cm)"
-              << std::setw(15) << "Efficiency" 
-              << std::setw(15) << "Purity" 
-              << std::setw(15) << "Eff * Pur" 
+              << std::setw(15) << "Efficiency"
+              << std::setw(15) << "Purity"
+              << std::setw(15) << "Eff * Pur"
               << "\n";
     std::cout << std::string(65, '-') << "\n";
 
     double best_mu_metric = -1.0;
-    //double best_mu_length = 20.0; //default fallback - redeclaration 
+    //double best_mu_length = 20.0; //default fallback - redeclaration
     double final_eff = 0.0;
     double final_pur = 0.0;
 
@@ -204,8 +204,8 @@ long long total_true_signal = 0;
 
             auto mstart = rMuonStart(i);
             auto mend = rMuonEnd(i);
-            double mu_len = std::sqrt(std::pow(mend.X() - mstart.X(), 2) + 
-                                      std::pow(mend.Y() - mstart.Y(), 2) + 
+            double mu_len = std::sqrt(std::pow(mend.X() - mstart.X(), 2) +
+                                      std::pow(mend.Y() - mstart.Y(), 2) +
                                       std::pow(mend.Z() - mstart.Z(), 2));
 
             if(mu_len < min_len) continue;
@@ -217,7 +217,7 @@ long long total_true_signal = 0;
         double Purity = (passed_total > 0) ? static_cast<double>(passed_signal) / passed_total : 0.0;
         double metric = Eff * Purity;
 
-        std::cout << std::left 
+        std::cout << std::left
                   << std::setw(20) << std::fixed << std::setprecision(1) << min_len
                   << std::setw(15) << std::setprecision(4) << Eff
                   << std::setw(15) << std::setprecision(4) << Purity
@@ -232,13 +232,13 @@ long long total_true_signal = 0;
         }
     }
 
-    std::cout >> "\nOptimal Min Muon Track Length Found: " << best_mu_length << "cm\n\n";
+    std::cout << "\nOptimal Min Muon Track Length Found: " << best_mu_length << "cm\n\n";
 
     //================================================================================================
     // Stage 3 : 4D Spatial Search (X, Y, Z, TPC Crop) with Locked Stage 1 & 2 Cuts
 
     std::cout << "=====================================================================================\n";
-    std::cout << "STAGE 3: 4D Spatial Scan (Locking Margin = " ,, best_margin
+    std::cout << "STAGE 3: 4D Spatial Scan (Locking Margin = " << best_margin
               << "cm, Muon Len = " << best_mu_length << "cm)\n";
     std::cout << "=====================================================================================\n";
 
@@ -280,7 +280,7 @@ long long total_true_signal = 0;
                         auto bmax = rBoxMax(i);
                         bool passes_margin = ana::NDLArGeo::BoxContainedInBox(
                             bmin.X(), bmin.Y(), bmin.Z(),
-                            bmax.X(), bmax.Y(), bmax.Z(), 
+                            bmax.X(), bmax.Y(), bmax.Z(),
                             best_margin
                         );
                         if (!passes_margin) continue;
@@ -289,22 +289,22 @@ long long total_true_signal = 0;
 
                         auto mstart = rMuonStart(i);
                         auto mend = rMuonEnd(i);
-                        double mu_len = std::sqrt(std::pow(mend.X() - mstart.X(), 2) + 
-                                                  std::pow(mend.Y() - mstart.Y(), 2) + 
+                        double mu_len = std::sqrt(std::pow(mend.X() - mstart.X(), 2) +
+                                                  std::pow(mend.Y() - mstart.Y(), 2) +
                                                   std::pow(mend.Z() - mstart.Z(), 2));
 
                         if (mu_len < best_mu_length) continue;
 
                         //3. Evaluate 4D Dynamic FV Cut (Outer X, Y, Z, + TPC uniforma crop)
                         bool passes_fv = ana::NDLArGeo::IsInCombinedNDLArFV(
-                            rVtxX(i), rVtxY(i), rVtxZ(i), 
-                            mx, mx, 
-                            my, my, 
+                            rVtxX(i), rVtxY(i), rVtxZ(i),
+                            mx, mx,
+                            my, my,
                             mz, mz,
                             tpc_m
                         );
                         if(!passes_fv) continue;
-                        
+
                         passed_total++;
                         if(rTruthCat(i) == 0) passed_signal++;
 
@@ -428,8 +428,8 @@ long long total_true_signal = 0;
                 //Check Dynamic muon cut
                 auto mstart = rMuonStart(i);
                 auto mend = rMuonEnd(i);
-                double mu_len = std::sqrt(std::pow(mend.X() - mstart.X(), 2) + 
-                                                    std::pow(mend.Y() - mstart.Y(), 2) + 
+                double mu_len = std::sqrt(std::pow(mend.X() - mstart.X(), 2) +
+                                                    std::pow(mend.Y() - mstart.Y(), 2) +
                                                     std::pow(mend.Z() - mstart.Z(), 2));
                 bool passes_mu_len = (mu_len>= min_len);
                 if (!passes_mu_len) continue;
@@ -440,17 +440,17 @@ long long total_true_signal = 0;
                     passed_signal++;
                 }
                 //if(*rTruthCat == 0) {
-                    
-            }
-    
-           
 
-            //calculate the Effeciency and purity for this specfic Containment volume crop parameter value 
+            }
+
+
+
+            //calculate the Effeciency and purity for this specfic Containment volume crop parameter value
             double Eff = static_cast<double>(passed_signal) / total_true_signal;
             double Purity = (passed_total > 0) ? static_cast<double>(passed_signal) / passed_total :0.0 ;
             double metric = Eff * Purity ;
 
-            std::cout << std::left 
+            std::cout << std::left
                     << std::setw(18) << std::fixed << std::setprecision(1) << margin
                     << std::setw(18) << std::setprecision(1) << min_len
                     << std::setw(15) << std::setprecision(4) << Eff
@@ -466,7 +466,7 @@ long long total_true_signal = 0;
             }
         }
     }
-    
+
 std::cout << std::string(75, '=') << "\n\n";
 
 // Print out summary of results
