@@ -114,7 +114,7 @@ long long total_true_signal = 0;
               << std::setw(15) << "Purity" 
               << std::setw(15) << "Eff * Pur" 
               << "\n";
-    std::cout << std::string(85, '-') << "\n";
+    std::cout << std::string(60, '-') << "\n";
 
     //set default mu_length for stage 1     
     const double default_mu_len = 20.0;
@@ -230,8 +230,144 @@ long long total_true_signal = 0;
             final_eff = Eff;
             final_pur = Purity;
         }
-
     }
+
+    std::cout >> "\nOptimal Min Muon Track Length Found: " << best_mu_length << "cm\n\n";
+
+    //================================================================================================
+    // Stage 3 : 4D Spatial Search (X, Y, Z, TPC Crop) with Locked Stage 1 & 2 Cuts
+
+    std::cout << "=====================================================================================\n";
+    std::cout << "STAGE 3: 4D Spatial Scan (Locking Margin = " ,, best_margin
+              << "cm, Muon Len = " << best_mu_length << "cm)\n";
+    std::cout << "=====================================================================================\n";
+
+
+    std::vector<double> x_margins;
+    for (double x_m = 10; x_m <= 150; x_m += 10) x_margins.push_back(x_m);
+
+    std::vector<double> y_margins;
+    for (double y_m = 10; y_m <= 150; y_m += 10) y_margins.push_back(y_m);
+
+    std::vector<double> z_margins;
+    for (double z_m = 10; z_m <= 150; z_m += 10) z_margins.push_back(z_m);
+
+    std::vector<double> tpc_margins;
+    for (double tpc_m = 1; tpc_m <= 20; tpc_m += 1) tpc_margins.push_back(tpc_m);
+
+    double best_metric_4d = -1.0;
+    double best_x = -1.0;
+    double best_y = -1.0;
+    double best_z = -1.0;
+    double best_tpc = -1.0;
+    double best_eff_4d = 0.0;
+    double best_pur_4d = 0.0;
+
+    for (double mx : x_margins) {
+        for (double my : y_margins) {
+            for(double mz : z_margins) {
+                for (double tpc_m : tpc_margins) {
+                    long long passed_signal = 0;
+                    long long passed_total = 0;
+
+                    for (long long i = 0; i < total_entries; ++i) {
+                        reader->LoadEntry(i);
+                        if (!rPassesFixed(i)) continue;
+
+                        //enforce locked contianment margin from stage 1
+
+                        auto bmin = rBoxMin(i);
+                        auto bmax = rBoxMax(i);
+                        bool passes_margin = ana::NDLArGeo::BoxContainedInBox(
+                            bmin.X(), bmin.Y(), bmin.Z(),
+                            bmax.X(), bmax.Y(), bmax.Z(), 
+                            best_margin
+                        );
+                        if (!passes_margin) continue;
+
+                        //2. Enforce Locked Muon Track Length from Stage 2
+
+                        auto mstart = rMuonStart(i);
+                        auto mend = rMuonEnd(i);
+                        double mu_len = std::sqrt(std::pow(mend.X() - mstart.X(), 2) + 
+                                                  std::pow(mend.Y() - mstart.Y(), 2) + 
+                                                  std::pow(mend.Z() - mstart.Z(), 2));
+
+                        if (mu_len < best_mu_length) continue;
+
+                        //3. Evaluate 4D Dynamic FV Cut (Outer X, Y, Z, + TPC uniforma crop)
+                        bool passes_fv = ana::NDLArGeo::IsInCombinedNDLArFV(
+                            rVtxX(i), rVtxY(i), rVtxZ(i), 
+                            mx, mx, 
+                            my, my, 
+                            mz, mz,
+                            tpc_m
+                        );
+                        if(!passes_fv) continue;
+                        
+                        passed_total++;
+                        if(rTruthCat(i) == 0) passed_signal++;
+
+                    }
+
+                    double Eff = static_cast<double>(passed_signal) / total_true_signal;
+                    double Purity = (passed_total > 0) ? static_cast<double>(passed_signal) / passed_total : 0.0;
+                    double metric = Eff * Purity;
+
+                    if (metric > best_metric_4d) {
+                        best_metric_4d = metric;
+                        best_x = mx;
+                        best_y = my;
+                        best_z = mz;
+                        best_tpc = tpc_m;
+                        best_eff_4d = Eff;
+                        best_pur_4d = Purity;
+                    }
+                }
+            }
+        }
+    }
+
+    //===========================================================================================================
+    // FINAL SUMMARY
+    //===========================================================================================================
+    std::cout << "\n================ 3-STAGE OPTIMIZATION SUMMARY ================\n";
+    std::cout << "--- Stage 1 & 2 (Kinematics & Containment) ---\n";
+    std::cout << "Optimal Containment Margin     : " << best_margin << " cm\n";
+    std::cout << "Optimal Min Muon Track Length  : " << best_mu_length << " cm\n\n";
+    std::cout << "--- Stage 3 (4D Spatial Search) ---\n";
+    std::cout << "Optimal X Outer Margin         : " << best_x << " cm\n";
+    std::cout << "Optimal Y Outer Margin         : " << best_y << " cm\n";
+    std::cout << "Optimal Z Outer Margin         : " << best_z << " cm\n";
+    std::cout << "Optimal TPC Uniform Crop       : " << best_tpc << " cm\n\n";
+    std::cout << "Final Maximum Efficiency       : " << (best_eff_4d * 100.0) << " %\n";
+    std::cout << "Final Purity at Optimal Point  : " << (best_pur_4d * 100.0) << " %\n";
+    std::cout << "Figure of Merit (Eff * Pur)    : " << best_metric_4d << "\n";
+    std::cout << "==============================================================\n";
+
+    return 0;
+
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
     // =========================================================================
     // FINAL OPTIMIZATION SUMMARY
     // =========================================================================
