@@ -117,7 +117,7 @@ long long total_true_signal = 0;
     std::cout << std::string(85, '-') << "\n";
 
     //set default mu_length for stage 1     
-    const double default_mu_len = 20.0
+    const double default_mu_len = 20.0;
 
     for (double margin : Margin_vals){
         long long passed_signal = 0;
@@ -128,7 +128,7 @@ long long total_true_signal = 0;
             if(!rPassesFixed(i)) continue;
 
             auto bmin = rBoxMin(i);
-            auto bmax = rboxMax(i);
+            auto bmax = rBoxMax(i);
 
             bool passes_margin = ana::NDLArGeo::BoxContainedInBox(bmin.X(), bmin.Y(), bmin.Z(), 
                                                                 bmax.X(), bmax.Y(), bmax.Z(), margin);
@@ -144,11 +144,107 @@ long long total_true_signal = 0;
 
             passed_total++;
             if (rTruthCat(i) == 0) passed_signal++;
+        }
+        double Eff = static_cast<double>(passed_signal) / total_true_signal; 
+        double Purity = (passed_total > 0) ? static_cast<double>(passed_signal) / passed_total :0.0 ;
+        double metric = Eff * Purity ;
 
+        std::cout << std::left 
+                    << std::setw(15) << std::fixed << std::setprecision(1) << margin
+                    << std::setw(15) << std::setprecision(4) << Eff
+                    << std::setw(15) << std::setprecision(4) << Purity
+                    << std::setw(15) << std::setprecision(4) << metric
+                    << "\n";
 
+        if (metric > best_metric) {
+            best_metric = metric;
+            best_margin = margin;
         }
     }
 
+    std::cout << "\nOptimal Contianment Margin Found: " << best_margin << "cm\n\n";
+
+    // ================================================================================
+    //Stage 2 : 1D Scan for optimal muon track length (using locked in best_margin)
+    //===============================================================================
+
+    std::cout << "=========================================================\n";
+    std::cout << "STAGE 2: 1D Scan for Optimal Min Muon Length (Locked Margin = " << best_margin << " cm)\n";
+    std::cout << "=========================================================\n";
+    std::cout << std::left 
+              << std::setw(20) << "Min Mu Length (cm)"
+              << std::setw(15) << "Efficiency" 
+              << std::setw(15) << "Purity" 
+              << std::setw(15) << "Eff * Pur" 
+              << "\n";
+    std::cout << std::string(65, '-') << "\n";
+
+    double best_mu_metric = -1.0;
+    //double best_mu_length = 20.0; //default fallback - redeclaration 
+    double final_eff = 0.0;
+    double final_pur = 0.0;
+
+    for (double min_len : min_mu_lengths){
+        long long passed_signal = 0;
+        long long passed_total = 0;
+
+        for (long long i =0; i< total_entries; ++i ){
+            reader->LoadEntry(i);
+            if(!rPassesFixed(i)) continue;
+
+            auto bmin = rBoxMin(i);
+            auto bmax = rBoxMax(i);
+
+            //Enforce the LOCKED optimal containment margin is used from stage 1
+
+            bool passes_margin = ana::NDLArGeo::BoxContainedInBox(bmin.X(), bmin.Y(), bmin.Z(),
+                                                                bmax.X(), bmax.Y(), bmax.Z(), best_margin);
+
+            if (!passes_margin) continue;
+
+            auto mstart = rMuonStart(i);
+            auto mend = rMuonEnd(i);
+            double mu_len = std::sqrt(std::pow(mend.X() - mstart.X(), 2) + 
+                                      std::pow(mend.Y() - mstart.Y(), 2) + 
+                                      std::pow(mend.Z() - mstart.Z(), 2));
+
+            if(mu_len < min_len) continue;
+
+            passed_total++;
+            if (rTruthCat(i) == 0) passed_signal++;
+        }
+        double Eff = static_cast<double>(passed_signal) / total_true_signal;
+        double Purity = (passed_total > 0) ? static_cast<double>(passed_signal) / passed_total : 0.0;
+        double metric = Eff * Purity;
+
+        std::cout << std::left 
+                  << std::setw(20) << std::fixed << std::setprecision(1) << min_len
+                  << std::setw(15) << std::setprecision(4) << Eff
+                  << std::setw(15) << std::setprecision(4) << Purity
+                  << std::setw(15) << std::setprecision(4) << metric
+                  << "\n";
+
+        if (metric > best_mu_metric) {
+            best_mu_metric = metric;
+            best_mu_length = min_len;
+            final_eff = Eff;
+            final_pur = Purity;
+        }
+
+    }
+    // =========================================================================
+    // FINAL OPTIMIZATION SUMMARY
+    // =========================================================================
+    std::cout << "\n================ SEQUENTIAL 1D OPTIMIZATION RESULTS ================\n";
+    std::cout << "Optimal Containment Margin Value : " << best_margin << " cm\n";
+    std::cout << "Optimal Min Muon Track Length  : " << best_mu_length << " cm\n";
+    std::cout << "Maximum Efficiency             : " << (final_eff * 100.0) << " %\n";
+    std::cout << "Purity at Optimal Point        : " << (final_pur * 100.0) << " %\n";
+    std::cout << "Figure of Merit (Eff * Pur)    : " << best_mu_metric << "\n";
+    std::cout << "====================================================================\n";
+
+    return 0;
+}
 
 
 
@@ -167,7 +263,7 @@ long long total_true_signal = 0;
 
 
 
-
+/*
 
     // 5. 2D Outer Loops: Scan every combination of Margin and Muon Track Length
     for (double margin : Margin_vals) {
@@ -251,3 +347,4 @@ std::cout << std::string(75, '=') << "\n\n";
 return 0;
 
 }
+*/
