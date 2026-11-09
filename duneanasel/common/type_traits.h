@@ -1,6 +1,6 @@
 #pragma once
 
-#if duneanasel_USE_SRPROXY
+#if duneanasel_SRProxy_available
 #include "duneanaobj/StandardRecord/Proxy/SRProxy.h"
 #endif
 
@@ -8,7 +8,7 @@ template <typename SRTypeConstraint, typename T> struct Proxyable {
 
   constexpr static bool is_type = std::is_same_v<SRTypeConstraint, T>;
   constexpr static bool is_proxy_to_type =
-#if duneanasel_USE_SRPROXY
+#if duneanasel_SRProxy_available
       std::is_same_v<typename caf::Proxy<SRTypeConstraint>, T>;
 #else
       false;
