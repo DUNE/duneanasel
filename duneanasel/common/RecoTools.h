@@ -1,8 +1,8 @@
 #pragma once
 
-#include "duneanaobj/StandardRecord/SRInteraction.h"
-
 #include "duneanasel/common/type_traits.h"
+
+#include "duneanaobj/StandardRecord/SRInteraction.h"
 
 #include <limits>
 
