@@ -1,0 +1,60 @@
+#include <chrono>
+#include <iostream>
+#include <string>
+
+#include <ROOT/RDataFrame.hxx>
+#include <ROOT/RNTupleDS.hxx>
+#include <TFile.h>
+#include <TH1D.h>
+
+#include <Math/Vector3D.h>
+#include <ROOT/RVec.hxx>
+
+#include "duneanaobj/StandardRecord/StandardRecord.h"
+
+using V3 = ROOT::Math::XYZVector;
+template <typename T>
+using RVec = ROOT::VecOps::RVec<T>;
+
+inline RVec<double> TrackLengths(const RVec<RVec<caf::SRRecoParticle>> &parts) {
+  RVec<double> lengths;
+  for (std::size_t i = 0; i < parts.size(); ++i) {
+    for (std::size_t j = 0; j < parts[i].size(); ++j) {
+      const auto &start = parts[i][j].start;
+      const auto &end = parts[i][j].end;
+      lengths.push_back((end - start).Mag());
+    }
+  }
+  return lengths;
+}
+
+int main(int argc, char const *argv[]) {
+  //ROOT::EnableImplicitMT();
+
+  const std::string inputPath =
+      (argc > 1) ? argv[1] : "build/example_spills.root";
+
+  auto dataframe = ROOT::RDF::FromRNTuple("caf", inputPath);
+
+  auto columns = dataframe.Define(
+      "dlpTrackLengths", TrackLengths,
+      {"rec.common.ixn.dlp.part.dlp"});
+  auto dlpHistogram = columns.Histo1D<RVec<double>>(
+      {"hTrackLengthDlp", "DLP track lengths;Length;Particles", 100, 0.0, 1000.0},
+      "dlpTrackLengths");
+
+  const auto loop_start = std::chrono::steady_clock::now();
+  dlpHistogram.GetValue();
+  auto const loop_elapsed = std::chrono::duration<double>(
+      std::chrono::steady_clock::now() - loop_start);
+  std::cout << "Loop time: " << loop_elapsed.count() << " seconds"
+            << std::endl;
+
+  TFile outputFile("alltracklen_rdf.root", "RECREATE");
+  dlpHistogram->Write();
+  outputFile.Close();
+
+  return 0;
+}
+
+
