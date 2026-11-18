@@ -16,3 +16,5 @@ int NPrimaryMuons(const caf::SRInteractionProxy* recoint)
   return n;
 }
 
+#endif
+
