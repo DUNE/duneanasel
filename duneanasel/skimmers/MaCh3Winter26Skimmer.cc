@@ -1,6 +1,7 @@
 #include "duneanaobj/StandardRecord/SRGlobal.h"
 #include "duneanaobj/StandardRecord/StandardRecord.h"
 
+#include "duneanasel/common/RecoTools.h"
 #include "duneanasel/common/TruthTools.h"
 #include "duneanasel/nd/ndlar/NDLArGeometry.h"
 
@@ -26,11 +27,11 @@ struct NamedCut {
 };
 
 struct DetSel {
-  std::string reco_path;
+  ana::RecoBranch reco_stack;
   std::function<bool(double, double, double)> InDetTrueVtxVolume;
   std::vector<NamedCut> CutFlow;
 
-  int PassesCuts(caf::SRInteraction const &ixn) {
+  int CutBits(caf::SRInteraction const &ixn) {
     int cut_mask = 0;
     for (size_t lvl = 0; lvl < CutFlow.size(); ++lvl) {
       cut_mask += (!CutFlow[lvl].cut(ixn) << lvl);
@@ -39,19 +40,9 @@ struct DetSel {
   }
 };
 
-static constexpr bool kSPINEReco = true;
-static constexpr bool kPandoraReco = false;
-
-template <bool isSPINE = true>
-bool Has1PrimRecoMulike(caf::SRInteraction const &ixn) {
+bool Has1PrimRecoMulike(std::vector<caf::SRRecoParticle> const &parts) {
   size_t nprimrecomu = 0;
-
-  auto const *parts = &ixn.part.dlp;
-  if constexpr (!isSPINE) {
-    parts = &ixn.part.pandora;
-  }
-
-  for (auto const &p : *parts) {
+  for (auto const &p : parts) {
     if ((!p.primary) || (p.pdg != 13)) {
       continue;
     }
@@ -60,33 +51,48 @@ bool Has1PrimRecoMulike(caf::SRInteraction const &ixn) {
   return nprimrecomu == 1;
 }
 
-DetSel NDLAr{"SPINE",
-             [](double x, double y, double z) {
-               return ana::NDLArGeo::IsInOuterFiducialVolume(x, y, z);
-             },
-             {
-                 NamedCut{"Vertex in FV",
-                          [](caf::SRInteraction const &ixn) {
-                            return ana::NDLArGeo::IsInCombinedNDLArFV(
-                                ixn.vtx.x, ixn.vtx.y, ixn.vtx.z, 50, 50, 50, 50,
-                                150, 50, 10);
-                          }},
-                 NamedCut{"Has 1 Primary Muon-like track",
-                          Has1PrimRecoMulike<kSPINEReco>},
-             }};
+constexpr static bool kSPINE = true;
+constexpr static bool kPandora = true;
 
-DetSel FDHD{
-    "Pandora",
-    [](double x, double y, double z) { return sel::beam::FDHD::InFV(x, y, z); },
+DetSel NDLAr{
+    ana::RecoBranch::kSPINE,
+    [](double x, double y, double z) {
+      return ana::NDLArGeo::IsInOuterFiducialVolume(x, y, z);
+    },
     {
         NamedCut{"Vertex in FV",
                  [](caf::SRInteraction const &ixn) {
-                   return sel::beam::FDHD::InFV(ixn.vtx.x, ixn.vtx.y,
-                                                ixn.vtx.z);
+                   return ana::NDLArGeo::IsInCombinedNDLArFV(
+                       ixn.vtx.x, ixn.vtx.y, ixn.vtx.z, 50, 50, 50, 50, 150, 50,
+                       10);
                  }},
         NamedCut{"Has 1 Primary Muon-like track",
-                 Has1PrimRecoMulike<kPandoraReco>},
+                 [](caf::SRInteraction const &ixn) {
+                   return Has1PrimRecoMulike(
+                       ana::GetRecoParticles<kSPINE>(ixn));
+                 }},
+        NamedCut{"Is Contained",
+                 [](caf::SRInteraction const &ixn) { return ixn.contained(); }},
     }};
+
+DetSel FDHD{
+    ana::RecoBranch::kPandora,
+    [](double x, double y, double z) { return sel::beam::FDHD::InFV(x, y, z); },
+    {NamedCut{"Vertex in FV",
+              [](caf::SRInteraction const &ixn) {
+                return sel::beam::FDHD::InFV(ixn.vtx.x, ixn.vtx.y, ixn.vtx.z);
+              }},
+     NamedCut{"Has 1 Primary Muon-like track",
+              [](caf::SRInteraction const &ixn) {
+                return Has1PrimRecoMulike(ana::GetRecoParticles<kPandora>(ixn));
+              }},
+     NamedCut{"Is Contained",
+              [](caf::SRInteraction const &ixn) { return ixn.contained(); }}}};
+
+constexpr static int kFV = 0b1;
+constexpr static int kOnePrimMu = 0b10;
+constexpr static int kContained = 0b100;
+constexpr static int kAllCuts = 0b111;
 
 caf::SRTrueInteraction const *
 GetTrueInteraction(caf::StandardRecord const &sr,
@@ -98,14 +104,8 @@ GetTrueInteraction(caf::StandardRecord const &sr,
   return &sr.mc.nu[tidx];
 }
 
-enum TruthCategory {
-  kNumuCC = 0,
-  kNC,
-  kNue,
-  kEntering,
-  kNoTruth,
-  kNCategories
-};
+enum TruthCategory { kNumuCC = 0, kNC, kNue, kEntering, kNoTruth };
+
 TruthCategory GetTrueCategory(
     caf::SRTrueInteraction const *tixn,
     std::function<bool(double, double, double)> const &InDetTrueVtxVolume) {
@@ -172,10 +172,10 @@ int main(int argc, const char *argv[]) {
       meta_model->MakeField<std::vector<std::vector<float>>>("param_knots");
 
   auto ixn_model = ROOT::RNTupleModel::Create();
-  auto sr_entry = ixn_model->MakeField<uint64_t>("sr_entry");
-  auto ixn_entry = ixn_model->MakeField<uint64_t>("ixn_entry");
+  auto sr_entry = ixn_model->MakeField<int>("sr_entry");
+  auto ixn_entry = ixn_model->MakeField<int>("ixn_entry");
   auto vtx_pos_cm = ixn_model->MakeField<ROOT::Math::XYZPoint>("vtx_pos_cm");
-  auto enu_lep_calo_GeV = ixn_model->MakeField<double>("enu_lep_calo_GeV");
+  auto enu_rec_GeV = ixn_model->MakeField<double>("enu_rec_GeV");
   auto mu_e_GeV = ixn_model->MakeField<double>("mu_e_GeV");
   auto shower_e_GeV = ixn_model->MakeField<double>("shower_e_GeV");
   auto sum_hadtrack_e_GeV = ixn_model->MakeField<double>("sum_hadtrack_e_GeV");
@@ -233,51 +233,45 @@ int main(int argc, const char *argv[]) {
 
   cafTr->GetEntry(0);
   auto &det_sel = GetDetectorSelection(*sr);
-  *reco_path = det_sel.reco_path;
-
-  bool isSPINE = det_sel.reco_path == "SPINE";
+  *reco_path = ana::to_string(det_sel.reco_stack);
 
   size_t filled = 0, allixn = 0;
 
-  for (uint64_t i = 0; i < cafTr->GetEntries(); ++i) {
+  for (int i = 0; i < cafTr->GetEntries(); ++i) {
     cafTr->GetEntry(i);
 
-    auto const *ixns = &sr->common.ixn.dlp;
-    if (!isSPINE) {
-      ixns = &sr->common.ixn.pandora;
-    }
+    auto const &ixns = ana::GetInteractions(*sr, det_sel.reco_stack);
 
-    for (uint64_t j = 0; j < ixns->size(); ++j) {
-      auto const &ixn = ixns->at(j);
+    for (size_t j = 0; j < ixns.size(); ++j) {
+      auto const &ixn = ixns.at(j);
       allixn++;
 
-      if (!det_sel.PassesCuts(ixn)) {
+      // bit field where failed cuts are marked as 1, so passes all == 0
+      constexpr static int cut_mask = kAllCuts ^ kContained;
+      if (det_sel.CutBits(ixn) & cut_mask) {
         continue;
       }
 
       *sr_entry = i;
       *ixn_entry = j;
       *vtx_pos_cm = {ixn.vtx.x, ixn.vtx.y, ixn.vtx.z};
-      *enu_lep_calo_GeV = ixn.Enu.lep_calo;
       *shower_e_GeV = 0;
       *sum_hadtrack_e_GeV = 0;
 
-      auto const *parts = &ixn.part.dlp;
-      if (!isSPINE) {
-        parts = &ixn.part.pandora;
-      }
-
-      for (auto const &p : *parts) {
-        if (p.origRecoObjType == caf::kTrack) {
-          if (p.primary && p.pdg) {
+      for (auto const &p : ana::GetRecoParticles(ixn, det_sel.reco_stack)) {
+        auto trk_shw = ana::GetTrackShower(p, det_sel.reco_stack);
+        if (trk_shw == caf::kTrack) {
+          if (p.primary && (p.pdg == 13)) {
             *mu_e_GeV = p.E;
           } else {
-            *shower_e_GeV += p.E;
+            *sum_hadtrack_e_GeV += p.E;
           }
-        } else if (p.origRecoObjType == caf::kShower) {
+        } else if (trk_shw == caf::kShower) {
           *shower_e_GeV += p.E;
         }
       }
+
+      *enu_rec_GeV = (*shower_e_GeV + *sum_hadtrack_e_GeV + *mu_e_GeV);
 
       auto const *tixn = GetTrueInteraction(*sr, ixn);
 
@@ -307,7 +301,7 @@ int main(int argc, const char *argv[]) {
       filled++;
     }
     if (i && !(i % 10)) {
-      std::cout << "process " << i << "/" << cafTr->GetEntries() << " ("
+      std::cout << "processed " << i << "/" << cafTr->GetEntries() << " ("
                 << filled << "/" << allixn
                 << " skimmed events) spills from the input" << std::endl;
     }
