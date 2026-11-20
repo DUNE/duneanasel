@@ -242,6 +242,8 @@ int main(int argc, const char *argv[]) {
           (*event.reco.shower_e_GeV + *event.reco.sum_hadtrack_e_GeV +
            *event.reco.mu_e_GeV);
 
+      *event.reco.sample = mach3winter26::Event::kNumuCCLike;
+
       auto const *tixn = GetTrueInteraction(*sr, ixn);
 
       *event.truth.category = GetTrueCategory(tixn, det_sel.InDetTrueVtxVolume);

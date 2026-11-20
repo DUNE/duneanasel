@@ -42,7 +42,9 @@ struct Event {
   std::shared_ptr<int> sr_entry;
   std::shared_ptr<int> ixn_entry;
 
+  enum Sample { kRejected = 0, kNumuCCLike, kNueCCLike, kNCLike };
   struct {
+    std::shared_ptr<int> sample;
     std::shared_ptr<ROOT::Math::XYZPoint> vtx_pos_cm;
     std::shared_ptr<double> enu_GeV;
     std::shared_ptr<double> mu_e_GeV;
@@ -68,6 +70,7 @@ struct Event {
     sr_entry = model->MakeField<int>("sr_entry");
     ixn_entry = model->MakeField<int>("ixn_entry");
 
+    reco.sample = model->MakeField<int>("sample");
     reco.vtx_pos_cm = model->MakeField<ROOT::Math::XYZPoint>("vtx_pos_cm");
     reco.enu_GeV = model->MakeField<double>("enu_rec_GeV");
     reco.mu_e_GeV = model->MakeField<double>("mu_e_GeV");
