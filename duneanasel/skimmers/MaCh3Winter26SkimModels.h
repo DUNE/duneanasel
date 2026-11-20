@@ -52,6 +52,7 @@ struct Event {
 
   struct {
     std::shared_ptr<int> category;
+    std::shared_ptr<bool> is_cc;
     std::shared_ptr<int> mode;
     std::shared_ptr<ROOT::Math::XYZPoint> vtx_pos_cm;
     std::shared_ptr<double> pdgnu;
@@ -74,6 +75,7 @@ struct Event {
     reco.sum_hadtrack_e_GeV = model->MakeField<double>("sum_hadtrack_e_GeV");
 
     truth.category = model->MakeField<int>("true_category");
+    truth.is_cc = model->MakeField<bool>("true_is_cc");
     truth.mode = model->MakeField<int>("true_mode");
     truth.vtx_pos_cm =
         model->MakeField<ROOT::Math::XYZPoint>("true_vtx_pos_cm");

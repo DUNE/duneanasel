@@ -245,6 +245,7 @@ int main(int argc, const char *argv[]) {
       auto const *tixn = GetTrueInteraction(*sr, ixn);
 
       *event.truth.category = GetTrueCategory(tixn, det_sel.InDetTrueVtxVolume);
+      *event.truth.is_cc = false;
       *event.truth.mode = 0;
       *event.truth.vtx_pos_cm = {-9999, -9999, -9999};
       *event.truth.pdgnu = 0;
@@ -252,6 +253,7 @@ int main(int argc, const char *argv[]) {
       *event.truth.enu_GeV = 0;
       event.truth.param_responses->clear();
       if (tixn) {
+        *event.truth.is_cc = tixn->iscc;
         *event.truth.mode = tixn->mode;
         *event.truth.vtx_pos_cm = {tixn->vtx.x, tixn->vtx.y, tixn->vtx.z};
         *event.truth.pdgnu = tixn->pdg;
