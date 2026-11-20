@@ -1,3 +1,5 @@
+#include "duneanasel/skimmers/MaCh3Winter26SkimModels.h"
+
 #include "duneanaobj/StandardRecord/SRGlobal.h"
 #include "duneanaobj/StandardRecord/StandardRecord.h"
 
@@ -11,10 +13,6 @@
 #include "TH1D.h"
 #include "TTree.h"
 
-#include "Math/Point3D.h"
-#include "Math/Vector4D.h"
-
-#include "ROOT/RNTupleModel.hxx"
 #include "ROOT/RNTupleWriter.hxx"
 
 #include <filesystem>
@@ -157,48 +155,15 @@ DetSel &GetDetectorSelection(caf::StandardRecord const &sr) {
 
 int main(int argc, const char *argv[]) {
 
-  auto meta_model = ROOT::RNTupleModel::Create();
-  auto duneanaobj_input_version =
-      meta_model->MakeField<std::string>("duneanaobj_input_version");
-  auto duneanaobj_process_version =
-      meta_model->MakeField<std::string>("duneanaobj_process_version");
-  auto duneanasel_version =
-      meta_model->MakeField<std::string>("duneanasel_version");
-  auto pot_processed = meta_model->MakeField<double>("pot_processed");
-  auto reco_path = meta_model->MakeField<std::string>("reco_path");
-  auto params_names =
-      meta_model->MakeField<std::vector<std::string>>("param_names");
-  auto params_knots =
-      meta_model->MakeField<std::vector<std::vector<float>>>("param_knots");
-
-  auto ixn_model = ROOT::RNTupleModel::Create();
-  auto sr_entry = ixn_model->MakeField<int>("sr_entry");
-  auto ixn_entry = ixn_model->MakeField<int>("ixn_entry");
-  auto vtx_pos_cm = ixn_model->MakeField<ROOT::Math::XYZPoint>("vtx_pos_cm");
-  auto enu_rec_GeV = ixn_model->MakeField<double>("enu_rec_GeV");
-  auto mu_e_GeV = ixn_model->MakeField<double>("mu_e_GeV");
-  auto shower_e_GeV = ixn_model->MakeField<double>("shower_e_GeV");
-  auto sum_hadtrack_e_GeV = ixn_model->MakeField<double>("sum_hadtrack_e_GeV");
-
-  auto true_category = ixn_model->MakeField<int>("true_category");
-  auto true_mode = ixn_model->MakeField<int>("true_mode");
-  auto true_vtx_pos_cm =
-      ixn_model->MakeField<ROOT::Math::XYZPoint>("true_vtx_pos_cm");
-  auto true_pdgnu = ixn_model->MakeField<double>("true_pdgnu");
-  auto true_pdgnu_original =
-      ixn_model->MakeField<double>("true_pdgnu_original");
-  auto true_enu_GeV = ixn_model->MakeField<double>("true_enu_GeV");
-  auto true_param_responses =
-      ixn_model->MakeField<std::vector<std::vector<float>>>(
-          "true_param_responses");
+  mach3winter26::Meta meta;
+  mach3winter26::Event event;
 
   std::unique_ptr<TFile> outf = std::make_unique<TFile>(argv[1], "RECREATE");
 
   auto meta_tuple =
-      ROOT::RNTupleWriter::Append(std::move(meta_model), "meta", *outf);
-
+      ROOT::RNTupleWriter::Append(std::move(meta.model), "meta", *outf);
   auto ixn_tuple =
-      ROOT::RNTupleWriter::Append(std::move(ixn_model), "ixn", *outf);
+      ROOT::RNTupleWriter::Append(std::move(event.model), "event", *outf);
 
   std::unique_ptr<TFile> fin(TFile::Open(argv[2], "READ"));
 
@@ -212,28 +177,30 @@ int main(int argc, const char *argv[]) {
   global->GetEntry(0);
   gl->UpdateVersionInformation();
 
-  *duneanaobj_input_version = gl->first_version;
-  *duneanaobj_process_version = gl->latest_version;
-  *duneanasel_version = DUNEANASEL_VERSION;
+  *meta.duneanaobj_input_version = gl->first_version;
+  *meta.duneanaobj_process_version = gl->latest_version;
+  *meta.duneanasel_version = DUNEANASEL_VERSION;
 
-  *pot_processed = 1; // currently broken in the inputs I think
+  *meta.pot_processed = 1; // currently broken in the inputs I think
 
   for (auto const &xp : gl->wgts.xsec_params) {
-    params_names->push_back(xp.name);
-    params_knots->push_back(xp.vals);
-    std::cout << "Expecting to find " << params_knots->back().size()
-              << " knots for parameter: " << params_names->back() << std::endl;
+    meta.param_names->push_back(xp.name);
+    meta.param_knots->push_back(xp.vals);
+    std::cout << "Expecting to find " << meta.param_knots->back().size()
+              << " knots for parameter: " << meta.param_names->back()
+              << std::endl;
   }
   for (auto const &xp : gl->wgts.flux_params) {
-    params_names->push_back(xp.name);
-    params_knots->push_back(xp.vals);
-    std::cout << "Expecting to find " << params_knots->back().size()
-              << " knots for parameter: " << params_names->back() << std::endl;
+    meta.param_names->push_back(xp.name);
+    meta.param_knots->push_back(xp.vals);
+    std::cout << "Expecting to find " << meta.param_knots->back().size()
+              << " knots for parameter: " << meta.param_names->back()
+              << std::endl;
   }
 
   cafTr->GetEntry(0);
   auto &det_sel = GetDetectorSelection(*sr);
-  *reco_path = ana::to_string(det_sel.reco_stack);
+  *meta.reco_path = ana::to_string(det_sel.reco_stack);
 
   size_t filled = 0, allixn = 0;
 
@@ -252,48 +219,50 @@ int main(int argc, const char *argv[]) {
         continue;
       }
 
-      *sr_entry = i;
-      *ixn_entry = j;
-      *vtx_pos_cm = {ixn.vtx.x, ixn.vtx.y, ixn.vtx.z};
-      *shower_e_GeV = 0;
-      *sum_hadtrack_e_GeV = 0;
+      *event.sr_entry = i;
+      *event.ixn_entry = j;
+      *event.reco.vtx_pos_cm = {ixn.vtx.x, ixn.vtx.y, ixn.vtx.z};
+      *event.reco.shower_e_GeV = 0;
+      *event.reco.sum_hadtrack_e_GeV = 0;
 
       for (auto const &p : ana::GetRecoParticles(ixn, det_sel.reco_stack)) {
         auto trk_shw = ana::GetTrackShower(p, det_sel.reco_stack);
         if (trk_shw == caf::kTrack) {
           if (p.primary && (p.pdg == 13)) {
-            *mu_e_GeV = p.E;
+            *event.reco.mu_e_GeV = p.E;
           } else {
-            *sum_hadtrack_e_GeV += p.E;
+            *event.reco.sum_hadtrack_e_GeV += p.E;
           }
         } else if (trk_shw == caf::kShower) {
-          *shower_e_GeV += p.E;
+          *event.reco.shower_e_GeV += p.E;
         }
       }
 
-      *enu_rec_GeV = (*shower_e_GeV + *sum_hadtrack_e_GeV + *mu_e_GeV);
+      *event.reco.enu_GeV =
+          (*event.reco.shower_e_GeV + *event.reco.sum_hadtrack_e_GeV +
+           *event.reco.mu_e_GeV);
 
       auto const *tixn = GetTrueInteraction(*sr, ixn);
 
-      *true_category = GetTrueCategory(tixn, det_sel.InDetTrueVtxVolume);
-      *true_mode = 0;
-      *true_vtx_pos_cm = {-9999, -9999, -9999};
-      *true_pdgnu = 0;
-      *true_pdgnu_original = 0;
-      *true_enu_GeV = 0;
-      true_param_responses->clear();
+      *event.truth.category = GetTrueCategory(tixn, det_sel.InDetTrueVtxVolume);
+      *event.truth.mode = 0;
+      *event.truth.vtx_pos_cm = {-9999, -9999, -9999};
+      *event.truth.pdgnu = 0;
+      *event.truth.pdgnu_original = 0;
+      *event.truth.enu_GeV = 0;
+      event.truth.param_responses->clear();
       if (tixn) {
-        *true_mode = tixn->mode;
-        *true_vtx_pos_cm = {tixn->vtx.x, tixn->vtx.y, tixn->vtx.z};
-        *true_pdgnu = tixn->pdg;
-        *true_pdgnu_original = tixn->pdgorig;
-        *true_enu_GeV = tixn->E;
+        *event.truth.mode = tixn->mode;
+        *event.truth.vtx_pos_cm = {tixn->vtx.x, tixn->vtx.y, tixn->vtx.z};
+        *event.truth.pdgnu = tixn->pdg;
+        *event.truth.pdgnu_original = tixn->pdgorig;
+        *event.truth.enu_GeV = tixn->E;
 
         for (auto const &r : tixn->xsec_systs) {
-          true_param_responses->push_back(r.weights);
+          event.truth.param_responses->push_back(r.weights);
         }
         for (auto const &r : tixn->flux_systs) {
-          true_param_responses->push_back(r.weights);
+          event.truth.param_responses->push_back(r.weights);
         }
       }
 
