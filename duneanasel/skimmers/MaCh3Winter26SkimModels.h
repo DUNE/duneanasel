@@ -55,8 +55,8 @@ struct Event {
     std::shared_ptr<bool> is_cc;
     std::shared_ptr<int> mode;
     std::shared_ptr<ROOT::Math::XYZPoint> vtx_pos_cm;
-    std::shared_ptr<double> pdgnu;
-    std::shared_ptr<double> pdgnu_original;
+    std::shared_ptr<int> pdgnu;
+    std::shared_ptr<int> pdgnu_original;
     std::shared_ptr<double> enu_GeV;
     std::shared_ptr<std::vector<std::vector<float>>> param_responses;
   } truth;
@@ -79,8 +79,8 @@ struct Event {
     truth.mode = model->MakeField<int>("true_mode");
     truth.vtx_pos_cm =
         model->MakeField<ROOT::Math::XYZPoint>("true_vtx_pos_cm");
-    truth.pdgnu = model->MakeField<double>("true_pdgnu");
-    truth.pdgnu_original = model->MakeField<double>("true_pdgnu_original");
+    truth.pdgnu = model->MakeField<int>("true_pdgnu");
+    truth.pdgnu_original = model->MakeField<int>("true_pdgnu_original");
     truth.enu_GeV = model->MakeField<double>("true_enu_GeV");
     truth.param_responses = model->MakeField<std::vector<std::vector<float>>>(
         "true_param_responses");
