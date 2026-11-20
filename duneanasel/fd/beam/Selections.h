@@ -81,21 +81,24 @@ namespace fd1x2x6 {
 // from CVN training, here:
 //
 // https://github.com/DUNE/dunereco/blob/ff92d1bc966c6e3cf7db1a434c8a723e74b0712c/dunereco/CVN/art/CVNZlibMaker_module.cc#L295
-template <typename T, typename C = Proxyable_t<caf::SRInteraction, T>>
-inline bool InFV(T const &fd_int) {
+inline bool InFV(double x, double y, double z) {
 
-  if (std::fabs(fd_int.vtx.X()) > 310) {
+  if (std::fabs(x) > 310) {
     return false;
   }
-  if (std::fabs(fd_int.vtx.Y()) > 550) {
+  if (std::fabs(y) > 550) {
     return false;
   }
-  auto const &z = fd_int.vtx.Z();
   if ((z < 50) || (z > 1244)) {
     return false;
   }
 
   return true;
+}
+
+template <typename T, typename C = Proxyable_t<caf::SRInteraction, T>>
+inline bool InFV(T const &fd_int) {
+  return InFV(fd_int.vtx.x, fd_int.vtx.y, fd_int.vtx.z);
 }
 
 } // namespace fd1x2x6

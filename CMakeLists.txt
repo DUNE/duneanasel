@@ -20,6 +20,7 @@ find_program(CMAKE_CXX_COMPILER NAMES $ENV{CXX} g++ PATHS ENV PATH NO_DEFAULT_PA
 LIST(APPEND CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake/Modules)
 
 option(duneanasel_build_examples "Whether to build examples" OFF)
+option(duneanasel_build_skimmers "Whether to build skimmers" ON)
 
 find_package(ROOT 6 REQUIRED)
 
@@ -51,6 +52,7 @@ endif()
 add_library(duneanasel_all INTERFACE)
 
 target_link_libraries(duneanasel_all INTERFACE duneanaobj::StandardRecord)
+target_compile_definitions(duneanasel_all INTERFACE DUNEANASEL_VERSION=\"${PROJECT_VERSION}\" duneanasel_USE_SRPROXY)
 target_include_directories(duneanasel_all INTERFACE
   $<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}>
   $<INSTALL_INTERFACE:include>)
@@ -59,4 +61,8 @@ add_library(duneanasel::all ALIAS duneanasel_all)
 
 if(duneanasel_build_examples)
   add_subdirectory(examples)
+endif()
+
+if(duneanasel_build_skimmers)
+  add_subdirectory(duneanasel/skimmers)
 endif()
