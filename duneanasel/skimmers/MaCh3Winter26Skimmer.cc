@@ -102,7 +102,22 @@ GetTrueInteraction(caf::StandardRecord const &sr,
   return &sr.mc.nu[tidx];
 }
 
-enum TruthCategory { kNumuCC = 0, kNC, kNue, kEntering, kNoTruth };
+enum TruthCategory {
+  kNumuCC = 0,
+  kNumubarCC,
+  kNueCC,
+  kNuebarCC,
+  kTauCC,
+  kNC,
+  kEntering,
+  kUncategorised,
+  kNoTruth
+};
+
+static const std::vector<std::string> TruthCategories = {
+    "NumuCC", "NumubarCC", "NueCC",         "NuebarCC", "TauCC",
+    "NC",     "Entering",  "Uncategorised", "NoTruth",
+};
 
 TruthCategory GetTrueCategory(
     caf::SRTrueInteraction const *tixn,
@@ -119,11 +134,107 @@ TruthCategory GetTrueCategory(
     return kNC;
   }
 
-  if (!tixn->pdg) {
-    return kNue;
+  if (std::abs(tixn->pdg) == 12) {
+    return (tixn->pdg > 0) ? kNueCC : kNuebarCC;
   }
 
-  return kNumuCC;
+  if (std::abs(tixn->pdg) == 14) {
+    return (tixn->pdg > 0) ? kNumuCC : kNumubarCC;
+  }
+
+  if (std::abs(tixn->pdg) == 16) {
+    return kTauCC;
+  }
+
+  return kUncategorised;
+}
+
+enum CCTopology {
+  kCC0Meson = 0,
+  kCC1Pip,
+  kCC1Pi0,
+  kCC1Pim,
+  kCCMultiPi,
+  kCCOther,
+};
+
+static const std::vector<std::string> CCTopologies = {
+    "CC0Meson", "CC1Pip", "CC1Pi0", "CC1Pim", "CCMultiPi", "CCOther",
+};
+
+CCTopology GetTrueCCTopology(caf::SRTrueInteraction const *tixn) {
+  int lepton_number = 0;
+  int npip = 0, npim = 0, npi0 = 0;
+  // ignore low energy gammas as they may be from nuclear de-excitation
+  int ngamma = 0, ngamma_lt10mev = 0;
+  int nother = 0;
+  for (auto const &p : tixn->prim) {
+    switch (p.pdg) {
+    case 11:
+      lepton_number++;
+      break;
+    case -11:
+      lepton_number--;
+      break;
+    case 13:
+      lepton_number++;
+      break;
+    case -13:
+      lepton_number--;
+      break;
+    case 22:
+      (p.p.E < 10 ? ngamma_lt10mev : ngamma)++;
+      break;
+    case 211:
+      npip++;
+      break;
+    case -211:
+      npim++;
+      break;
+    case 111:
+      npi0++;
+      break;
+    case 2212:
+    case 2112:
+      break;
+    default:
+      if (p.pdg < 1000000000) { // skip nuclear blobs and weird stuff
+        nother++;
+      }
+    }
+  }
+  int npi = npip + npim + npi0;
+  nother += ngamma;
+
+  // weird number of leptons
+  if ((tixn->pdg > 0) && (lepton_number != 1)) {
+    return kCCOther;
+  }
+  if ((tixn->pdg < 0) && (lepton_number != -1)) {
+    return kCCOther;
+  }
+  if (nother) {
+    return kCCOther;
+  }
+  if (npi) {
+    if (ngamma) {
+      return kCCOther;
+    }
+    if (npi > 1) {
+      return kCCMultiPi;
+    }
+    if (npip) {
+      return kCC1Pip;
+    }
+    if (npim) {
+      return kCC1Pim;
+    }
+    if (npi0) {
+      return kCC1Pi0;
+    }
+  }
+
+  return kCC0Meson;
 }
 
 enum Detector { nd_lar = 0, fd_hd, fd_vd };
@@ -181,6 +292,9 @@ int main(int argc, const char *argv[]) {
   *meta.duneanaobj_process_version = gl->latest_version;
   *meta.duneanasel_version = DUNEANASEL_VERSION;
 
+  *meta.truth_categories = TruthCategories;
+  *meta.truth_cctopologies = CCTopologies;
+
   *meta.pot_processed = 1; // currently broken in the inputs I think
 
   for (auto const &xp : gl->wgts.xsec_params) {
@@ -213,7 +327,10 @@ int main(int argc, const char *argv[]) {
       auto const &ixn = ixns.at(j);
       allixn++;
 
-      // bit field where failed cuts are marked as 1, so passes all == 0
+      // bit field where failed cuts are marked as 1:
+      // - so passes masked-in cuts == 0
+      // - mask out cuts with XOR:
+      //   e.g. kAllCuts ^ kContained require passes all cuts except containment
       constexpr static int cut_mask = kAllCuts ^ kContained;
       if (det_sel.CutBits(ixn) & cut_mask) {
         continue;
@@ -256,6 +373,9 @@ int main(int argc, const char *argv[]) {
       event.truth.param_responses->clear();
       if (tixn) {
         *event.truth.is_cc = tixn->iscc;
+        *event.truth.cctopology =
+            *event.truth.category ? -1 : GetTrueCCTopology(tixn);
+
         *event.truth.mode = tixn->mode;
         *event.truth.vtx_pos_cm = {tixn->vtx.x, tixn->vtx.y, tixn->vtx.z};
         *event.truth.pdgnu = tixn->pdg;
