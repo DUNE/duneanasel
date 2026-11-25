@@ -168,9 +168,9 @@ namespace sel{
                 }
 
                 inline double DistToOuterWall(double x, double y, double z) {
-                    double dx = std::min(x - geo::kNDLArXLo, geo::kNDLArXHi - x);
-                    double dy = std::min(y - geo::kNDLArYLo, geo::kNDLArYHi - y);
-                    double dz = std::min(z - geo::kNDLArZLo, geo::kNDLArZHi - z);
+                    double dx = std::min(x - geo::NDLArXLo, geo::NDLArXHi - x);
+                    double dy = std::min(y - geo::NDLArYLo, geo::NDLArYHi - y);
+                    double dz = std::min(z - geo::NDLArZLo, geo::NDLArZHi - z);
                     return std::min({dx, dy, dz});
                 }
 
@@ -205,15 +205,15 @@ namespace sel{
 
                 template <typename T, typename C = Proxyable_t<caf::SRRecoParticle, T>>
                 inline bool MuonEscapesDownstream(T const &p) {
-                    if (!(p.start.x > geo::kNDLArXLo + kWallMargin &&
-                        p.start.x < geo::kNDLArXHi - kWallMargin &&
-                        p.start.y > geo::kNDLArYLo + kWallMargin &&
-                        p.start.y < geo::kNDLArYHi - kWallMargin &&
-                        p.start.z > geo::kNDLArZLo + kWallMargin &&
-                        p.start.z < geo::kNDLArZHi - kWallMargin)) return false;
-                    return (p.end.x > geo::kNDLArXLo && p.end.x < geo::kNDLArXHi &&
-                            p.end.y > geo::kNDLArYLo && p.end.y < geo::kNDLArYHi &&
-                            p.end.z > geo::kNDLArZLo);
+                    if (!(p.start.x > geo::NDLArXLo + kWallMargin &&
+                        p.start.x < geo::NDLArXHi - kWallMargin &&
+                        p.start.y > geo::NDLArYLo + kWallMargin &&
+                        p.start.y < geo::NDLArYHi - kWallMargin &&
+                        p.start.z > geo::NDLArZLo + kWallMargin &&
+                        p.start.z < geo::NDLArZHi - kWallMargin)) return false;
+                    return (p.end.x > geo::NDLArXLo && p.end.x < geo::NDLArXHi &&
+                            p.end.y > geo::NDLArYLo && p.end.y < geo::NDLArYHi &&
+                            p.end.z > geo::NDLArZLo);
                 }
 
                 template <typename T, typename C = Proxyable_t<caf::SRInteraction, T>>
