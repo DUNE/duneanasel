@@ -4,6 +4,10 @@
 
 #include <vector>
 #include <cmath>
+#include "Math/Point3D.h"
+#include <limits>
+#include <algorithm>
+
 
 namespace ana{
 
@@ -32,21 +36,10 @@ namespace NDLArGeo {
     const double HALF_DY = TPC_DY / 2.0;
     const double HALF_DZ = TPC_DZ / 2.0;
 
- /*
-    //old definitions for detector geometry 
-    //define the outer boundaries of the detector volume (in cm)
-    const double NDLArXLo = -346.9;
-    const double NDLArXHi = 346.9;
-    const double NDLArYLo = -215.5;
-    const double NDLArYHi = 81.7;
-    const double NDLArZLo = 418.2;
-    const double NDLArZHi = 913.3;
-    */
-
 
  //new definitions for detector geometry, 
  //using maximum boundaries of TPC modules
-    const double NDLArXLo = -276.2885 - HALF_DX;
+    const double NDLArXLo = -323.7115 - HALF_DX;
     const double NDLArXHi = 323.7115 + HALF_DX;
     const double NDLArYLo = -66.8713 - HALF_DY;
     const double NDLArYHi = -66.8713 + HALF_DY;
@@ -92,36 +85,51 @@ namespace NDLArGeo {
         { 323.7115, -66.8713, 865.7559}, { 276.2885, -66.8713, 865.7559}
     };
 
-    // function to construct TPC boxes and return a vector containing the 70 boxes
-    inline std::vector<Box> GetTPCBoxes(double margin_x = 0.0, double margin_y = 0.0, double margin_z = 0.0) {
-        std::vector<Box> boxes;
-        boxes.reserve(TPC_CENTERS.size());
+    // Structure describing an axis-aligned bounding box
+    struct AABBCrop {
+        double xmin, xmax, ymin, ymax, zmin, zmax;
+    };
 
-        for (const auto& center : TPC_CENTERS) { //this for loop access the TPC_CENTERS vector
-            Box b;
-            b.x_min = center[0] - HALF_DX + margin_x;
-            b.x_max = center[0] + HALF_DX - margin_x;
-            b.y_min = center[1] - HALF_DY + margin_y;
-            b.y_max = center[1] + HALF_DY - margin_y;
-            b.z_min = center[2] - HALF_DZ + margin_z;
-            b.z_max = center[2] + HALF_DZ - margin_z;
-            boxes.push_back(b);
+    AABBCrop MakeUniformCrop(double const &c) { return AABBCrop{c, c, c, c, c, c}; }
+
+    struct AABB {
+        ROOT::Math::XYZPoint min, max;
+
+        bool CroppedContains(double const &x, double const &y, double const &z,
+                            AABBCrop const &crop) const {
+            return ((x >= (min.x() + crop.xmin)) && (x <= (max.x() - crop.xmax)) &&
+                    (y >= (min.y() + crop.ymin)) && (y <= (max.y() - crop.ymax)) &&
+                    (z >= (min.z() + crop.zmin)) && (z <= (max.z() - crop.zmax)));
         }
-        return boxes;
+
+        bool CroppedContains(ROOT::Math::XYZPoint const &p,
+                            AABBCrop const &crop) const {
+            return CroppedContains(p.x(), p.y(), p.z(), crop);
+        }
+
+        bool Contains(double const &x, double const &y, double const &z) const {
+            return ((x >= min.x()) && (x <= max.x()) && (y >= min.y()) &&
+                    (y <= max.y()) && (z >= min.z()) && (z <= max.z()));
+        }
+
+        bool Contains(ROOT::Math::XYZPoint const &p) const {
+            return Contains(p.x(), p.y(), p.z());
+        }
+    };
+
+    inline auto GetTPCAABBs() {
+        std::vector<AABB> tpcs;
+
+        for (const auto &center : TPC_CENTERS) {
+            tpcs.push_back(
+                AABB{{center[0] - HALF_DX, center[1] - HALF_DY, center[2] - HALF_DZ},
+                    {center[0] + HALF_DX, center[1] + HALF_DY, center[2] + HALF_DZ}});
+        }
+        return tpcs;
     }
 
-    //construct the outer active volume as a box with the specified margins
-    inline Box GetOuterBox(double margin_x_high = 0.0, double margin_x_low = 0.0,
-                           double margin_y_high = 0.0, double margin_y_low = 0.0, 
-                           double margin_z_high = 0.0, double margin_z_low=0.0 ) {
-        Box outer_box;
-        outer_box.x_min = NDLArXLo + margin_x_low;
-        outer_box.x_max = NDLArXHi - margin_x_high;
-        outer_box.y_min = NDLArYLo + margin_y_low;
-        outer_box.y_max = NDLArYHi - margin_y_high;
-        outer_box.z_min = NDLArZLo + margin_z_low;
-        outer_box.z_max = NDLArZHi - margin_z_high;
-        return outer_box;
+    inline auto GetNDLArAABB() {
+        return AABB{{NDLArXLo, NDLArYLo, NDLArZLo}, {NDLArXHi, NDLArYHi, NDLArZHi}};
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -132,22 +140,32 @@ namespace NDLArGeo {
                                         double margin_x_high = 0.0, double margin_x_low = 0.0,
                                         double margin_y_high=0.0, double margin_y_low=0.0,
                                         double margin_z_high = 0.0, double margin_z_low = 0.0){
-    
-    return GetOuterBox(margin_x_high, margin_x_low, 
-                       margin_y_high, margin_y_low, 
-                       margin_z_high, margin_z_low).Contains(x, y, z);
+                                        
+        static auto const NDLArAABB = GetNDLArAABB();
+
+        return NDLArAABB.CroppedContains(x, y, z,
+                                   AABBCrop{margin_x_low, margin_x_high,
+                                            margin_y_low, margin_y_high,
+                                            margin_z_low, margin_z_high});
     }
 
     // Checks if position (x, y, z) is inside any of the individual TPC boxes
-    inline bool IsInBoxesFiducialVolume(double x, double y, double z, double margin_x = 0.0, double margin_y = 0.0, double margin_z = 0.0) {
-        const std::vector<Box> boxes = GetTPCBoxes(margin_x, margin_y, margin_z);
-        for (const auto& box : boxes) {
-            if (box.Contains(x, y, z)) { 
-                return true;
+    inline bool IsInBoxesFiducialVolume(double x, double y, double z,
+                                        double margin_x = 0.0,
+                                        double margin_y = 0.0,
+                                        double margin_z = 0.0) {
+        static auto const TPCAABBs = GetTPCAABBs();
+
+        for (const auto &tpc : TPCAABBs) {
+            if (tpc.CroppedContains(x, y, z,
+                                    AABBCrop{margin_x, margin_x, margin_y, margin_y,
+                                            margin_z, margin_z})) {
+            return true;
             }
         }
         return false;
     }
+
 
     ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -182,6 +200,6 @@ namespace NDLArGeo {
                                                           Containment_crop,Containment_crop ));
     }
     
-}
-}
+} //Namespace NDLArGeo
+} //Namespace ana
 #endif // NDLARGEOMETRY_H
