@@ -53,9 +53,14 @@ add_library(duneanasel_all INTERFACE)
 
 target_link_libraries(duneanasel_all INTERFACE duneanaobj::StandardRecord)
 target_compile_definitions(duneanasel_all INTERFACE DUNEANASEL_VERSION=\"${PROJECT_VERSION}\" duneanasel_USE_SRPROXY)
+
 target_include_directories(duneanasel_all INTERFACE
   $<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}>
   $<INSTALL_INTERFACE:include>)
+
+if(TARGET duneanaobj::StandardRecordProxy)
+  target_compile_definitions(duneanasel_all INTERFACE duneanasel_SRProxy_available)
+endif()
 
 add_library(duneanasel::all ALIAS duneanasel_all)
 
