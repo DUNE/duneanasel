@@ -92,151 +92,6 @@ constexpr static int kOnePrimMu = 0b10;
 constexpr static int kContained = 0b100;
 constexpr static int kAllCuts = 0b111;
 
-caf::SRTrueInteraction const *
-GetTrueInteraction(caf::StandardRecord const &sr,
-                   caf::SRInteraction const &ixn) {
-  auto tidx = ana::GetTrueInteractionIndex(ixn);
-  if (tidx == ana::kCannotFindTruth) {
-    return nullptr;
-  }
-  return &sr.mc.nu[tidx];
-}
-
-enum TruthCategory {
-  kNumuCC = 0,
-  kNumubarCC,
-  kNueCC,
-  kNuebarCC,
-  kTauCC,
-  kNC,
-  kEntering,
-  kUncategorised,
-  kNoTruth
-};
-
-static const std::vector<std::string> TruthCategories = {
-    "NumuCC", "NumubarCC", "NueCC",         "NuebarCC", "TauCC",
-    "NC",     "Entering",  "Uncategorised", "NoTruth",
-};
-
-TruthCategory GetTrueCategory(
-    caf::SRTrueInteraction const *tixn,
-    std::function<bool(double, double, double)> const &InDetTrueVtxVolume) {
-  if (!tixn) {
-    return kNoTruth;
-  }
-
-  if (!InDetTrueVtxVolume(tixn->vtx.x, tixn->vtx.y, tixn->vtx.z)) {
-    return kEntering;
-  }
-
-  if (!tixn->iscc) {
-    return kNC;
-  }
-
-  if (std::abs(tixn->pdg) == 12) {
-    return (tixn->pdg > 0) ? kNueCC : kNuebarCC;
-  }
-
-  if (std::abs(tixn->pdg) == 14) {
-    return (tixn->pdg > 0) ? kNumuCC : kNumubarCC;
-  }
-
-  if (std::abs(tixn->pdg) == 16) {
-    return kTauCC;
-  }
-
-  return kUncategorised;
-}
-
-enum CCTopology {
-  kCC0Meson = 0,
-  kCC1Pip,
-  kCC1Pi0,
-  kCC1Pim,
-  kCCMultiPi,
-  kCCOther,
-};
-
-static const std::vector<std::string> CCTopologies = {
-    "CC0Meson", "CC1Pip", "CC1Pi0", "CC1Pim", "CCMultiPi", "CCOther",
-};
-
-CCTopology GetTrueCCTopology(caf::SRTrueInteraction const *tixn) {
-  int lepton_number = 0;
-  int npip = 0, npim = 0, npi0 = 0;
-  // ignore low energy gammas as they may be from nuclear de-excitation
-  int ngamma = 0, ngamma_lt10mev = 0;
-  int nother = 0;
-  for (auto const &p : tixn->prim) {
-    switch (p.pdg) {
-    case 11:
-      lepton_number++;
-      break;
-    case -11:
-      lepton_number--;
-      break;
-    case 13:
-      lepton_number++;
-      break;
-    case -13:
-      lepton_number--;
-      break;
-    case 22:
-      (p.p.E < 10 ? ngamma_lt10mev : ngamma)++;
-      break;
-    case 211:
-      npip++;
-      break;
-    case -211:
-      npim++;
-      break;
-    case 111:
-      npi0++;
-      break;
-    case 2212:
-    case 2112:
-      break;
-    default:
-      if (p.pdg < 1000000000) { // skip nuclear blobs and weird stuff
-        nother++;
-      }
-    }
-  }
-  int npi = npip + npim + npi0;
-  nother += ngamma;
-
-  // weird number of leptons
-  if ((tixn->pdg > 0) && (lepton_number != 1)) {
-    return kCCOther;
-  }
-  if ((tixn->pdg < 0) && (lepton_number != -1)) {
-    return kCCOther;
-  }
-  if (nother) {
-    return kCCOther;
-  }
-  if (npi) {
-    if (ngamma) {
-      return kCCOther;
-    }
-    if (npi > 1) {
-      return kCCMultiPi;
-    }
-    if (npip) {
-      return kCC1Pip;
-    }
-    if (npim) {
-      return kCC1Pim;
-    }
-    if (npi0) {
-      return kCC1Pi0;
-    }
-  }
-
-  return kCC0Meson;
-}
-
 enum Detector { nd_lar = 0, fd_hd, fd_vd };
 Detector GetDetector(caf::StandardRecord const &sr) {
   if (sr.meta.nd_lar.enabled || sr.meta.lar2x2.enabled) {
@@ -292,8 +147,8 @@ int main(int argc, const char *argv[]) {
   *meta.duneanaobj_process_version = gl->latest_version;
   *meta.duneanasel_version = DUNEANASEL_VERSION;
 
-  *meta.truth_categories = TruthCategories;
-  *meta.truth_cctopologies = CCTopologies;
+  *meta.truth_categories = ana::TruthCategories;
+  *meta.truth_cctopologies = ana::CCTopologies;
 
   *meta.pot_processed = 1; // currently broken in the inputs I think
 
@@ -361,9 +216,10 @@ int main(int argc, const char *argv[]) {
 
       *event.reco.sample = mach3winter26::Event::kNumuCCLike;
 
-      auto const *tixn = GetTrueInteraction(*sr, ixn);
+      auto const *tixn = ana::GetTrueInteraction(*sr, ixn);
 
-      *event.truth.category = GetTrueCategory(tixn, det_sel.InDetTrueVtxVolume);
+      *event.truth.category = static_cast<int>(
+          ana::GetTrueCategory(tixn, det_sel.InDetTrueVtxVolume));
       *event.truth.is_cc = false;
       *event.truth.mode = 0;
       *event.truth.vtx_pos_cm = {-9999, -9999, -9999};
@@ -374,7 +230,9 @@ int main(int argc, const char *argv[]) {
       if (tixn) {
         *event.truth.is_cc = tixn->iscc;
         *event.truth.cctopology =
-            *event.truth.category ? -1 : GetTrueCCTopology(tixn);
+            *event.truth.category
+                ? -1
+                : static_cast<int>(ana::GetTrueCCTopology(*tixn));
 
         *event.truth.mode = tixn->mode;
         *event.truth.vtx_pos_cm = {tixn->vtx.x, tixn->vtx.y, tixn->vtx.z};
