@@ -29,6 +29,21 @@ target_link_libraries(track_lengths_rdf
   ROOT::Graf
 )
 
+add_executable(track_lengths_rntuple track_lengths_rntuple.cxx)
+target_link_libraries(track_lengths_rntuple
+  duneanasel::all
+  ROOT::Core
+  ROOT::GenVector
+  ROOT::ROOTVecOps
+  ROOT::ROOTDataFrame
+  ROOT::RIO
+  ROOT::Tree
+  ROOT::ROOTNTuple
+  ROOT::Hist
+  ROOT::Gpad
+  ROOT::Graf
+)
+
 add_executable(track_lengths_rdf_dumb track_lengths_rdf_dumb.cxx)
 target_link_libraries(track_lengths_rdf_dumb
   duneanasel::all
