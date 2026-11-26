@@ -5,6 +5,8 @@
 #include "duneanaobj/StandardRecord/SRInteraction.h"
 
 #include <limits>
+#include <set>
+#include <vector>
 
 namespace ana {
 
@@ -19,7 +21,7 @@ enum class RecoBranch { LIST_OF_VARIABLES };
 #undef X
 
 #define X(a)                                                                   \
-  case RecoBranch::k##a:                                                                   \
+  case RecoBranch::k##a:                                                       \
     return #a;
 inline std::string_view const to_string(RecoBranch b) {
   switch (b) {
@@ -34,7 +36,19 @@ inline std::string_view const to_string(RecoBranch b) {
 #undef LIST_OF_VARIABLES
 
 template <typename T, typename C = Proxyable_t<caf::SRRecoParticle, T>>
-inline double ParticleLength(T const &p) {
+inline double ParticleLength_cm(T const &p) {
+  if (std::isnan(p.start.x) || std::isinf(p.start.x) || std::isnan(p.end.x) ||
+      std::isinf(p.end.x)) {
+    return -1.;
+  }
+  if (std::isnan(p.start.y) || std::isinf(p.start.y) || std::isnan(p.end.y) ||
+      std::isinf(p.end.y)) {
+    return -1.;
+  }
+  if (std::isnan(p.start.z) || std::isinf(p.start.z) || std::isnan(p.end.z) ||
+      std::isinf(p.end.z)) {
+    return -1.;
+  }
   return std::hypot(p.end.x - p.start.x, p.end.y - p.start.y,
                     p.end.z - p.start.z);
 }
@@ -135,6 +149,71 @@ inline auto const *GetLongestParticle(T const &ixn,
                                       RecoBranch reco = RecoBranch::kSPINE) {
   return (reco == RecoBranch::kSPINE) ? GetLongestParticle<true>(ixn)
                                       : GetLongestParticle<false>(ixn);
+}
+
+template <typename T, typename C = Proxyable_t<caf::SRRecoParticle, T>>
+inline bool IsPrimaryWithPDG(T const &p, std::set<int> const &pdgs) {
+  return (p.primary == 1) && pdgs.count(p.pdg);
+}
+
+template <bool isSPINE, typename T,
+          typename C = Proxyable_t<caf::SRInteraction, T>>
+inline int CountPrimariesWithPDG(T const &nd_int, std::set<int> const &pdgs) {
+
+  auto const &parts = GetRecoParticles<isSPINE>(ixn);
+
+  int n = 0;
+  for (auto const &p : parts) {
+    n += IsPrimaryWithPDG(p, pdgs);
+  }
+  return n;
+}
+
+template <typename T, typename C = Proxyable_t<caf::SRInteraction, T>>
+inline int CountPrimariesWithPDG(T const &nd_int, std::set<int> const &pdgs,
+                                 RecoBranch reco = RecoBranch::kSPINE) {
+  return (reco == RecoBranch::kSPINE) ? CountPrimariesWithPDG<true>(ixn, pdgs)
+                                      : CountPrimariesWithPDG<false>(ixn, pdgs);
+}
+
+/// single pdg override
+template <typename T, typename C = Proxyable_t<caf::SRInteraction, T>>
+inline int CountPrimariesWithPDG(T const &nd_int, int pdg,
+                                 RecoBranch reco = RecoBranch::kSPINE) {
+  return (reco == RecoBranch::kSPINE)
+             ? CountPrimariesWithPDG<true>(ixn, {pdg})
+             : CountPrimariesWithPDG<false>(ixn, {pdg});
+}
+
+template <bool isSPINE, typename T,
+          typename C = Proxyable_t<caf::SRInteraction, T>>
+inline auto GetFirstPrimaryWithPDG(T const &nd_int, std::set<int> const &pdgs) {
+  auto const &parts = GetRecoParticles<isSPINE>(ixn);
+
+  std::add_pointer_t<parts::value_type> p = nullptr;
+
+  for (auto const &p : parts) {
+    if (IsPrimaryWithPDG(p, pdgs)) {
+      return &p;
+    }
+  }
+  return p;
+}
+
+template <typename T, typename C = Proxyable_t<caf::SRInteraction, T>>
+inline auto GetFirstPrimaryWithPDG(T const &nd_int, std::set<int> const &pdgs,
+                                   RecoBranch reco = RecoBranch::kSPINE) {
+  return (reco == RecoBranch::kSPINE)
+             ? GetFirstPrimaryWithPDG<true>(ixn, pdgs)
+             : GetFirstPrimaryWithPDG<false>(ixn, pdgs);
+}
+
+template <typename T, typename C = Proxyable_t<caf::SRInteraction, T>>
+inline auto GetFirstPrimaryWithPDG(T const &nd_int, std::set<int> pdg,
+                                   RecoBranch reco = RecoBranch::kSPINE) {
+  return (reco == RecoBranch::kSPINE)
+             ? GetFirstPrimaryWithPDG<true>(ixn, {pdg})
+             : GetFirstPrimaryWithPDG<false>(ixn, {pdg});
 }
 
 } // namespace ana
