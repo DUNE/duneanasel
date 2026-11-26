@@ -89,6 +89,21 @@ target_link_libraries(track_lengths_rdf_super_super_dumb
   ROOT::Graf
 )
 
+add_executable(track_lengths_rdf_super_dumb_nice track_lengths_rdf_super_dumb_nice.cxx)
+target_link_libraries(track_lengths_rdf_super_dumb_nice
+  duneanasel::all
+  ROOT::Core
+  ROOT::GenVector
+  ROOT::ROOTVecOps
+  ROOT::ROOTDataFrame
+  ROOT::RIO
+  ROOT::Tree
+  ROOT::ROOTNTuple
+  ROOT::Hist
+  ROOT::Gpad
+  ROOT::Graf
+)
+
 install(TARGETS
   NDLAr_NumuCCContained_LongestTrack
   NDLAr_NumuCCContained_VtxPosition
