@@ -58,12 +58,12 @@ static std::vector<std::string> const TruthCategories = {
 template <typename T, typename C = Proxyable_t<caf::SRTrueInteraction, T>>
 inline TruthCat GetTrueCategory(
     T const *tixn,
-    std::function<bool(double, double, double)> const &InDetTrueVtxVolume) {
+    std::function<bool(caf::SRVector3D const &)> const &InDetTrueVtxVolume) {
   if (!tixn) {
     return TruthCat::kNoTruth;
   }
 
-  if (!InDetTrueVtxVolume(tixn->vtx.x, tixn->vtx.y, tixn->vtx.z)) {
+  if (!InDetTrueVtxVolume(tixn->vtx)) {
     return TruthCat::kEntering;
   }
 

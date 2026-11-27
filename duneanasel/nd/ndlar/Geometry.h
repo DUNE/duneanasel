@@ -78,9 +78,13 @@ struct AABB {
             (z >= (min.z() + crop.zmin)) && (z <= (max.z() - crop.zmax)));
   }
 
-  bool CroppedContains(ROOT::Math::XYZPoint const &p,
+  bool CroppedContains(ROOT::Math::XYZPoint const &xyz,
                        AABBCrop const &crop) const {
-    return CroppedContains(p.x(), p.y(), p.z(), crop);
+    return CroppedContains(xyz.x(), xyz.y(), xyz.z(), crop);
+  }
+
+  bool CroppedContains(caf::SRVector3D const &xyz, AABBCrop const &crop) const {
+    return CroppedContains(xyz.x, xyz.y, xyz.z, crop);
   }
 
   bool Contains(double const &x, double const &y, double const &z) const {
@@ -88,11 +92,16 @@ struct AABB {
             (y <= max.y()) && (z >= min.z()) && (z <= max.z()));
   }
 
-  bool Contains(ROOT::Math::XYZPoint const &p) const {
-    return Contains(p.x(), p.y(), p.z());
+  bool Contains(ROOT::Math::XYZPoint const &xyz) const {
+    return Contains(xyz.x(), xyz.y(), xyz.z());
   }
 
-  double DistanceToWall(double const &x, double const &y, double const &z) {
+  bool Contains(caf::SRVector3D const &xyz) const {
+    return Contains(xyz.x, xyz.y, xyz.z);
+  }
+
+  double DistanceToClosestAAWall(double const &x, double const &y,
+                                 double const &z) const {
     return std::min({
         x - min.x(),
         max.x() - x,
@@ -101,6 +110,14 @@ struct AABB {
         z - min.z(),
         max.z() - z,
     });
+  }
+
+  bool DistanceToClosestAAWall(ROOT::Math::XYZPoint const &xyz) const {
+    return DistanceToClosestAAWall(xyz.x(), xyz.y(), xyz.z());
+  }
+
+  bool DistanceToClosestAAWall(caf::SRVector3D const &xyz) const {
+    return DistanceToClosestAAWall(xyz.x, xyz.y, xyz.z);
   }
 };
 
@@ -121,28 +138,26 @@ inline auto GetNDLArAABB() {
 
 /// %brief Checks if a point is inside the cropped active volume box
 inline bool PointInNDLArCroppedActiveVolume(
-    double x, double y, double z, double x_high_crop = 0.0,
+    caf::SRVector3D const &xyz, double x_high_crop = 0.0,
     double x_low_crop = 0.0, double y_high_crop = 0.0, double y_low_crop = 0.0,
     double z_high_crop = 0.0, double z_low_crop = 0.0) {
 
   static auto const NDLArAABB = GetNDLArAABB();
 
-  return NDLArAABB.CroppedContains(x, y, z,
-                                   AABBCrop{x_low_crop, x_high_crop, y_low_crop,
-                                            y_high_crop, z_low_crop,
-                                            z_high_crop});
+  return NDLArAABB.CroppedContains(xyz, AABBCrop{x_low_crop, x_high_crop,
+                                                 y_low_crop, y_high_crop,
+                                                 z_low_crop, z_high_crop});
 }
 
 /// %brief Checks if a point is inside any TPC volume with crops
-inline bool PointInTPCCroppedVolume(double x, double y, double z,
+inline bool PointInTPCCroppedVolume(caf::SRVector3D const &xyz,
                                     double x_crop = 0.0, double y_crop = 0.0,
                                     double z_crop = 0.0) {
   static auto const TPCAABBs = GetTPCAABBs();
 
   for (const auto &tpc : TPCAABBs) {
     if (tpc.CroppedContains(
-            x, y, z,
-            AABBCrop{x_crop, x_crop, y_crop, y_crop, z_crop, z_crop})) {
+            xyz, AABBCrop{x_crop, x_crop, y_crop, y_crop, z_crop, z_crop})) {
       return true;
     }
   }
@@ -151,16 +166,16 @@ inline bool PointInTPCCroppedVolume(double x, double y, double z,
 
 /// %brief Checks if a point is inside the union of the cropped active and
 /// individual TPC volumes
-inline bool PointInCroppedLArVolume(double x, double y, double z,
+inline bool PointInCroppedLArVolume(caf::SRVector3D const &xyz,
                                     double x_high_crop, double x_low_crop,
                                     double y_high_crop, double y_low_crop,
                                     double z_high_crop, double z_low_crop,
                                     double TPC_crop) {
 
-  return PointInNDLArCroppedActiveVolume(x, y, z, x_high_crop, x_low_crop,
+  return PointInNDLArCroppedActiveVolume(xyz, x_high_crop, x_low_crop,
                                          y_high_crop, y_low_crop, z_high_crop,
                                          z_low_crop) &&
-         PointInTPCCroppedVolume(x, y, z, TPC_crop, TPC_crop, TPC_crop);
+         PointInTPCCroppedVolume(xyz, TPC_crop, TPC_crop, TPC_crop);
 }
 
 } // namespace ndlar

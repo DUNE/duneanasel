@@ -64,9 +64,10 @@ struct Meta {
 
     truth.categories =
         model->MakeField<std::vector<std::string>>("truth_categories");
+    truth.nixn_categ =
+        model->MakeField<std::vector<int>>("truth_nixn_truthcateg");
     truth.cctopologies =
         model->MakeField<std::vector<std::string>>("truth_cctopologies");
-    truth.nixn_categ = model->MakeField<std::vector<int>>("truth_cctopologies");
 
     syst.param_names =
         model->MakeField<std::vector<std::string>>("syst_param_names");

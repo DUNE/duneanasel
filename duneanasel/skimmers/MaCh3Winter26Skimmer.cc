@@ -5,7 +5,9 @@
 
 #include "duneanasel/common/RecoTools.h"
 #include "duneanasel/common/TruthTools.h"
-#include "duneanasel/nd/ndlar/NDLArGeometry.h"
+
+#include "duneanasel/nd/ndlar/numucc/inc/Selections.h"
+#include "duneanasel/nd/ndlar/numucc/0pi/Selections.h"
 
 #include "duneanasel/fd/beam/Selections.h"
 
@@ -19,84 +21,41 @@
 #include <string>
 #include <vector>
 
-struct NamedCut {
-  std::string name;
-  std::function<bool(caf::SRInteraction const &)> cut;
-};
-
 struct DetSel {
   std::string name;
   ana::RecoBranch reco_stack;
   std::vector<std::string> selection_categories;
-  std::function<bool(double, double, double)> InDetTrueVtxVolume;
-  std::vector<NamedCut> CutFlow;
-
-  int CutBits(caf::SRInteraction const &ixn) {
-    int cut_mask = 0;
-    for (size_t lvl = 0; lvl < CutFlow.size(); ++lvl) {
-      cut_mask += (!CutFlow[lvl].cut(ixn) << lvl);
-    }
-    return cut_mask;
-  }
+  std::function<bool(caf::SRVector3D const &)> InDetTrueVtxVolume;
+  std::function<int(caf::SRInteraction const &ixn)> Selection;
 };
 
-bool Has1PrimRecoMulike(std::vector<caf::SRRecoParticle> const &parts) {
-  size_t nprimrecomu = 0;
-  for (auto const &p : parts) {
-    if ((!p.primary) || (p.pdg != 13)) {
-      continue;
-    }
-    nprimrecomu += 1;
-  }
-  return nprimrecomu == 1;
-}
+DetSel NDLAr{"NDLAr",
+             ana::RecoBranch::kSPINE,
+             {"not_selected", "numucc_0pi", "numucc_inc"},
+             [](caf::SRVector3D const &xyz) -> bool {
+               return geo::ndlar::PointInNDLArCroppedActiveVolume(xyz);
+             },
+             [](caf::SRInteraction const &ixn) -> int {
+               int sample_bits = 0;
+               sample_bits +=
+                   (sel::beam::ndlar::numucc::ApplyInclusiveSelectionV1_Geom(
+                        ixn) == sel::beam::ndlar::numucc::kInclusive)
+                   << 1;
 
-constexpr static bool kSPINE = true;
-constexpr static bool kPandora = true;
+               sample_bits += (sel::beam::ndlar::numucc::Apply0PiSelection(
+                                   ixn) == sel::beam::ndlar::numucc::k0Pi)
+                              << 2;
 
-DetSel NDLAr{
-    "NDLAr",
-    ana::RecoBranch::kSPINE,
-    {"numucc_0pi", "numucc_inc"},
-    [](double x, double y, double z) {
-      return ana::NDLArGeo::IsInOuterFiducialVolume(x, y, z);
-    },
-    {
-        NamedCut{"Vertex in FV",
-                 [](caf::SRInteraction const &ixn) {
-                   return ana::NDLArGeo::IsInCombinedNDLArFV(
-                       ixn.vtx.x, ixn.vtx.y, ixn.vtx.z, 50, 50, 50, 50, 150, 50,
-                       10);
-                 }},
-        NamedCut{"Has 1 Primary Muon-like track",
-                 [](caf::SRInteraction const &ixn) {
-                   return Has1PrimRecoMulike(
-                       ana::GetRecoParticles<kSPINE>(ixn));
-                 }},
-        NamedCut{"Is Contained",
-                 [](caf::SRInteraction const &ixn) { return ixn.contained(); }},
-    }};
+               return sample_bits;
+             }};
 
-DetSel FDHD{
-    "FDHD",
-    ana::RecoBranch::kPandora,
-    {"numucc_inc", "nuecc_inc", "nc_inc"},
-    [](double x, double y, double z) { return sel::beam::FDHD::InFV(x, y, z); },
-    {NamedCut{"Vertex in FV",
-              [](caf::SRInteraction const &ixn) {
-                return sel::beam::FDHD::InFV(ixn.vtx.x, ixn.vtx.y, ixn.vtx.z);
-              }},
-     NamedCut{"Has 1 Primary Muon-like track",
-              [](caf::SRInteraction const &ixn) {
-                return Has1PrimRecoMulike(ana::GetRecoParticles<kPandora>(ixn));
-              }},
-     NamedCut{"Is Contained",
-              [](caf::SRInteraction const &ixn) { return ixn.contained(); }}}};
-
-constexpr static int kFV = 0b1;
-constexpr static int kOnePrimMu = 0b10;
-constexpr static int kContained = 0b100;
-constexpr static int kAllCuts = 0b111;
+DetSel FDHD{"FDHD",
+            ana::RecoBranch::kPandora,
+            {"not_selected", "numucc_inc", "nuecc_inc", "nc_inc"},
+            [](caf::SRVector3D const &xyz) -> bool {
+              return sel::beam::FDHD::InFV(xyz.x, xyz.y, xyz.z);
+            },
+            [](caf::SRInteraction const &ixn) -> int { return true; }};
 
 enum Detector { nd_lar = 0, fd_hd, fd_vd };
 Detector GetDetector(caf::StandardRecord const &sr) {
@@ -165,17 +124,17 @@ int main(int argc, const char *argv[]) {
       std::vector<int>(ana::CCTopologies.size(), 0);
 
   for (auto const &xp : gl->wgts.xsec_params) {
-    meta.param_names->push_back(xp.name);
-    meta.param_knots->push_back(xp.vals);
-    std::cout << "Expecting to find " << meta.param_knots->back().size()
-              << " knots for parameter: " << meta.param_names->back()
+    meta.syst.param_names->push_back(xp.name);
+    meta.syst.param_knots->push_back(xp.vals);
+    std::cout << "Expecting to find " << meta.syst.param_knots->back().size()
+              << " knots for parameter: " << meta.syst.param_names->back()
               << std::endl;
   }
   for (auto const &xp : gl->wgts.flux_params) {
-    meta.param_names->push_back(xp.name);
-    meta.param_knots->push_back(xp.vals);
-    std::cout << "Expecting to find " << meta.param_knots->back().size()
-              << " knots for parameter: " << meta.param_names->back()
+    meta.syst.param_names->push_back(xp.name);
+    meta.syst.param_knots->push_back(xp.vals);
+    std::cout << "Expecting to find " << meta.syst.param_knots->back().size()
+              << " knots for parameter: " << meta.syst.param_names->back()
               << std::endl;
   }
 
@@ -190,7 +149,7 @@ int main(int argc, const char *argv[]) {
 
   for (int i = 0; i < cafTr->GetEntries(); ++i) {
     cafTr->GetEntry(i);
-    *meta.processed.nspills++;
+    (*meta.processed.nspills)++;
 
     for (size_t tj = 0; tj < sr->mc.nu.size(); ++tj) {
       auto const &tixn = sr->mc.nu.at(tj);
@@ -203,7 +162,7 @@ int main(int argc, const char *argv[]) {
 
     for (size_t ij = 0; ij < ixns.size(); ++ij) {
       auto const &ixn = ixns.at(ij);
-      *meta.processed.nrecoixn++;
+      (*meta.processed.nrecoixn)++;
 
       auto const *tixn = ana::GetTrueInteraction(*sr, ixn);
 
@@ -211,12 +170,8 @@ int main(int argc, const char *argv[]) {
           ana::GetTrueCategory(tixn, det_sel.InDetTrueVtxVolume));
       meta.processed.nrecoixn_truthcateg->at(tcat)++;
 
-      // bit field where failed cuts are marked as 1:
-      // - so passes masked-in cuts == 0
-      // - mask out cuts with XOR:
-      //   e.g. kAllCuts ^ kContained require passes all cuts except containment
-      constexpr static int cut_mask = kAllCuts ^ kContained;
-      if (det_sel.CutBits(ixn) & cut_mask) {
+      *event.reco.sample = det_sel.Selection(ixn);
+      if (!*event.reco.sample) {
         continue;
       }
 
@@ -242,8 +197,6 @@ int main(int argc, const char *argv[]) {
       *event.reco.enu_GeV =
           (*event.reco.shower_e_GeV + *event.reco.sum_hadtrack_e_GeV +
            *event.reco.mu_e_GeV);
-
-      *event.reco.sample = mach3winter26::Event::kNumuCCLike;
 
       *event.truth.category = tcat;
       *event.truth.is_cc = false;

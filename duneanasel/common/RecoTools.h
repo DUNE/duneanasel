@@ -36,28 +36,28 @@ inline std::string_view const to_string(RecoBranch b) {
 #undef LIST_OF_VARIABLES
 
 template <typename T, typename C = Proxyable_t<caf::SRRecoParticle, T>>
-inline double ParticleLength_cm(T const &p) {
-  if (std::isnan(p.start.x) || std::isinf(p.start.x) || std::isnan(p.end.x) ||
-      std::isinf(p.end.x)) {
+inline double ParticleLength_cm(T const &part) {
+  if (std::isnan(part.start.x) || std::isinf(part.start.x) ||
+      std::isnan(part.end.x) || std::isinf(part.end.x)) {
     return -1.;
   }
-  if (std::isnan(p.start.y) || std::isinf(p.start.y) || std::isnan(p.end.y) ||
-      std::isinf(p.end.y)) {
+  if (std::isnan(part.start.y) || std::isinf(part.start.y) ||
+      std::isnan(part.end.y) || std::isinf(part.end.y)) {
     return -1.;
   }
-  if (std::isnan(p.start.z) || std::isinf(p.start.z) || std::isnan(p.end.z) ||
-      std::isinf(p.end.z)) {
+  if (std::isnan(part.start.z) || std::isinf(part.start.z) ||
+      std::isnan(part.end.z) || std::isinf(part.end.z)) {
     return -1.;
   }
-  return std::hypot(p.end.x - p.start.x, p.end.y - p.start.y,
-                    p.end.z - p.start.z);
+  return std::hypot(part.end.x - part.start.x, part.end.y - part.start.y,
+                    part.end.z - part.start.z);
 }
 
 template <bool isSPINE, typename T,
           typename C = Proxyable_t<caf::SRRecoParticle, T>>
-inline auto GetTrackShower(T const &p) {
+inline auto GetTrackShower(T const &part) {
   if constexpr (isSPINE) {
-    switch (p.recoobj.type) {
+    switch (part.recoobj.type) {
     case caf::SRRecoBaseID::kNDLArDLPTrack:
       return caf::kTrack;
     case caf::SRRecoBaseID::kNDLArDLPShower:
@@ -66,7 +66,7 @@ inline auto GetTrackShower(T const &p) {
       return caf::kUnknownRecoObj;
     }
   } else {
-    switch (p.recoobj.type) {
+    switch (part.recoobj.type) {
     case caf::SRRecoBaseID::kNDLArPandoraTrack:
       return caf::kTrack;
     case caf::SRRecoBaseID::kNDLARPandoraShower:
@@ -80,9 +80,10 @@ inline auto GetTrackShower(T const &p) {
 // looks silly but lets you avoid a runtime branch if you know which reco you're
 // using ahead of time
 template <typename T, typename C = Proxyable_t<caf::SRRecoParticle, T>>
-inline auto GetTrackShower(T const &p, RecoBranch reco = RecoBranch::kSPINE) {
-  return (reco == RecoBranch::kSPINE) ? GetTrackShower<true>(p)
-                                      : GetTrackShower<false>(p);
+inline auto GetTrackShower(T const &part,
+                           RecoBranch reco = RecoBranch::kSPINE) {
+  return (reco == RecoBranch::kSPINE) ? GetTrackShower<true>(part)
+                                      : GetTrackShower<false>(part);
 }
 
 template <bool isSPINE, typename T,
@@ -129,11 +130,11 @@ inline auto const *GetLongestParticle(T const &ixn) {
   double longest = std::numeric_limits<double>::lowest();
   size_t longest_idx = std::numeric_limits<size_t>::max();
   for (size_t i = 0; i < parts.size(); ++i) {
-    const auto &p = parts.at(i);
-    if (p.primary != 1) {
+    const auto &part = parts.at(i);
+    if (part.primary != 1) {
       continue;
     }
-    double const &plen = ParticleLength(p);
+    double const &plen = ParticleLength_cm(part);
     if (plen > longest) {
       longest = plen;
       longest_idx = i;
@@ -152,25 +153,25 @@ inline auto const *GetLongestParticle(T const &ixn,
 }
 
 template <typename T, typename C = Proxyable_t<caf::SRRecoParticle, T>>
-inline bool IsPrimaryWithPDG(T const &p, std::set<int> const &pdgs) {
-  return (p.primary == 1) && pdgs.count(p.pdg);
+inline bool IsPrimaryWithPDG(T const &part, std::set<int> const &pdgs) {
+  return (part.primary == 1) && pdgs.count(part.pdg);
 }
 
 template <bool isSPINE, typename T,
           typename C = Proxyable_t<caf::SRInteraction, T>>
-inline int CountPrimariesWithPDG(T const &nd_int, std::set<int> const &pdgs) {
+inline int CountPrimariesWithPDG(T const &ixn, std::set<int> const &pdgs) {
 
   auto const &parts = GetRecoParticles<isSPINE>(ixn);
 
   int n = 0;
-  for (auto const &p : parts) {
-    n += IsPrimaryWithPDG(p, pdgs);
+  for (auto const &part : parts) {
+    n += IsPrimaryWithPDG(part, pdgs);
   }
   return n;
 }
 
 template <typename T, typename C = Proxyable_t<caf::SRInteraction, T>>
-inline int CountPrimariesWithPDG(T const &nd_int, std::set<int> const &pdgs,
+inline int CountPrimariesWithPDG(T const &ixn, std::set<int> const &pdgs,
                                  RecoBranch reco = RecoBranch::kSPINE) {
   return (reco == RecoBranch::kSPINE) ? CountPrimariesWithPDG<true>(ixn, pdgs)
                                       : CountPrimariesWithPDG<false>(ixn, pdgs);
@@ -178,7 +179,7 @@ inline int CountPrimariesWithPDG(T const &nd_int, std::set<int> const &pdgs,
 
 /// single pdg override
 template <typename T, typename C = Proxyable_t<caf::SRInteraction, T>>
-inline int CountPrimariesWithPDG(T const &nd_int, int pdg,
+inline int CountPrimariesWithPDG(T const &ixn, int pdg,
                                  RecoBranch reco = RecoBranch::kSPINE) {
   return (reco == RecoBranch::kSPINE)
              ? CountPrimariesWithPDG<true>(ixn, {pdg})
@@ -187,21 +188,19 @@ inline int CountPrimariesWithPDG(T const &nd_int, int pdg,
 
 template <bool isSPINE, typename T,
           typename C = Proxyable_t<caf::SRInteraction, T>>
-inline auto GetFirstPrimaryWithPDG(T const &nd_int, std::set<int> const &pdgs) {
+inline auto GetFirstPrimaryWithPDG(T const &ixn, std::set<int> const &pdgs) {
   auto const &parts = GetRecoParticles<isSPINE>(ixn);
 
-  std::add_pointer_t<parts::value_type> p = nullptr;
-
-  for (auto const &p : parts) {
-    if (IsPrimaryWithPDG(p, pdgs)) {
-      return &p;
+  for (auto const &part : parts) {
+    if (IsPrimaryWithPDG(part, pdgs)) {
+      return &part;
     }
   }
-  return p;
+  return decltype(parts.data()){nullptr};
 }
 
 template <typename T, typename C = Proxyable_t<caf::SRInteraction, T>>
-inline auto GetFirstPrimaryWithPDG(T const &nd_int, std::set<int> const &pdgs,
+inline auto GetFirstPrimaryWithPDG(T const &ixn, std::set<int> const &pdgs,
                                    RecoBranch reco = RecoBranch::kSPINE) {
   return (reco == RecoBranch::kSPINE)
              ? GetFirstPrimaryWithPDG<true>(ixn, pdgs)
@@ -209,11 +208,36 @@ inline auto GetFirstPrimaryWithPDG(T const &nd_int, std::set<int> const &pdgs,
 }
 
 template <typename T, typename C = Proxyable_t<caf::SRInteraction, T>>
-inline auto GetFirstPrimaryWithPDG(T const &nd_int, std::set<int> pdg,
+inline auto GetFirstPrimaryWithPDG(T const &ixn, int pdg,
                                    RecoBranch reco = RecoBranch::kSPINE) {
   return (reco == RecoBranch::kSPINE)
              ? GetFirstPrimaryWithPDG<true>(ixn, {pdg})
              : GetFirstPrimaryWithPDG<false>(ixn, {pdg});
+}
+
+constexpr bool kPrimary = true;
+constexpr bool kAllParticles = false;
+
+template <bool isSPINE, typename T,
+          typename C = Proxyable_t<caf::SRInteraction, T>>
+inline auto CountShowers(T const &ixn, bool only_primary) {
+  auto const &parts = GetRecoParticles<isSPINE>(ixn);
+
+  int NShowers = 0;
+  for (auto const &part : parts) {
+    if (only_primary && !part.primary) {
+      continue;
+    }
+    NShowers += (GetTrackShower<isSPINE>(part) == caf::kShower);
+  }
+  return NShowers;
+}
+
+template <typename T, typename C = Proxyable_t<caf::SRInteraction, T>>
+inline auto CountShowers(T const &ixn, bool only_primary,
+                         RecoBranch reco = RecoBranch::kSPINE) {
+  return (reco == RecoBranch::kSPINE) ? CountShowers<true>(ixn, only_primary)
+                                      : CountShowers<false>(ixn, only_primary);
 }
 
 } // namespace ana
