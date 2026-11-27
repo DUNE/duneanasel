@@ -39,12 +39,11 @@ DetSel NDLAr{"NDLAr",
                int sample_bits = 0;
                sample_bits +=
                    (sel::beam::ndlar::numucc::ApplyInclusiveSelectionV1_Geom(
-                        ixn) == sel::beam::ndlar::numucc::kInclusive)
-                   << 1;
+                        ixn) == sel::beam::ndlar::numucc::kInclusive);
 
                sample_bits += (sel::beam::ndlar::numucc::Apply0PiSelection(
                                    ixn) == sel::beam::ndlar::numucc::k0Pi)
-                              << 2;
+                              << 1;
 
                return sample_bits;
              }};
