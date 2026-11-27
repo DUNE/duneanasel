@@ -4,63 +4,6 @@
 
 namespace ana::numucc0pi {
 
-//Returns truth matched interaction for a reco interaction input 
-const caf::SRTrueInteractionProxy* GetTruthMatch(const caf::SRInteractionProxy* sr)
-{
-    if (sr->truth.empty())
-        return nullptr;
-
-    // Find best-matched true interaction
-    size_t tidx = 0;
-    float maxOverlap = 0.0;
-
-    for (size_t i = 0; i < sr->truthOverlap.size(); ++i) {
-        if (sr->truthOverlap[i] > maxOverlap) {
-            maxOverlap = sr->truthOverlap[i];
-            tidx = i;
-        }
-    }
-
-    // Get ancestor SRProxy
-    const caf::SRProxy* proxy = sr->Ancestor<caf::SRProxy>();
-
-    // Return matched true interaction
-    return &proxy->mc.nu[sr->truth[tidx]];
-}
-
-//check an interaction is in the true volume 
-bool InFVTrue (const caf::SRTrueInteractionProxy* sr){
-
-  //const std::vector<double> kDefaultBoxMargins = {5.0, 5.0, 5.0}; //in cm
-  //const std::vector<double> kDefaultAVMargins = {25.0, 25.0, 25.0}; // in cm
-
-    double outer_x_high = 0.0;
-    double outer_x_low = 0.0;
-    double outer_y_high = 0.0;
-    double outer_y_low = 0.0;
-    double outer_z_high = 0.0;
-    double outer_z_low = 0.0;
-
-    //TPC uniform crop
-    const double kDefaultTPCMargin = 0.0; // in cm
-
-
-    double x = sr->vtx.x;
-    double y = sr->vtx.y;
-    double z = sr->vtx.z;
-
-
-
-  return NDLArGeo::IsInCombinedNDLArFV(x, y, z, outer_x_high, outer_x_low,
-                                                outer_y_high, outer_y_low,
-                                                outer_z_high, outer_z_low,
-                                                kDefaultTPCMargin);
-
-}
-
-
-
-
 //enumerates the interaction type
 enum TruthInteractionType {
     kNuMuCC0PiFV_ArgTarg = 0,
@@ -74,7 +17,7 @@ enum TruthInteractionType {
     kUncatagorisable = 8,
     kNuMuCC0PiFV_NONArgTarg = 9,
     kNTypes = 10
-    
+
 };
 
 std::string TruthInteractionTypeToString(TruthInteractionType tit){
@@ -134,16 +77,16 @@ inline double TruthInteractionChecker(const caf::SRTrueInteractionProxy* truthIn
 
         else if (nupdg == 14) {
 
-                
+
                 //nu_mu CC interaction outside the FV
 
-                //ALTERNATIVE FOR Nu_muCCINC selection, no pion selection happening here 
+                //ALTERNATIVE FOR Nu_muCCINC selection, no pion selection happening here
                 /*
                 if(!inFV){
                     return static_cast<double>(kNuMu_NuMuBarCCincOOFV);
                 }
                 else{
-                // nu_mu CC 0Pi with a truth muon track >= 20 cm AND particles contained/ muons DS 
+                // nu_mu CC 0Pi with a truth muon track >= 20 cm AND particles contained/ muons DS
             //else if(zeroPi ){
                     // Split based on whether the struck target is Argon-40 or not
                     if (Is_Arg) {
@@ -161,11 +104,11 @@ inline double TruthInteractionChecker(const caf::SRTrueInteractionProxy* truthIn
             }
 
             // nu_mu CC 0Pi with a truth muon track >= 20 cm AND particles contained/ muons DS
-            else if(zeroPi ){   
+            else if(zeroPi ){
             // Split based on whether the struck target is Argon-40 or not
                 if (Is_Arg) {
                     return static_cast<double>(kNuMuCC0PiFV_ArgTarg);
-                } else {    
+                } else {
                     return static_cast<double>(kNuMuCC0PiFV_NONArgTarg);
                 }
             }
@@ -186,14 +129,14 @@ inline double TruthInteractionChecker(const caf::SRTrueInteractionProxy* truthIn
 
                     return static_cast<double>( kNuMuCCnPiFV);
                 }
-            
+
                 else {
                     //nu_mu CC in FV by not nPi
                     //this catches 0Pi as well as anything unusual
                     return static_cast<double>(kUncatagorisable);
                 }
     */
-        
+
 
         //------------------------------
         //anti-nu_mu cc
@@ -238,7 +181,7 @@ inline double TruthInteractionChecker(const caf::SRTrueInteractionProxy* truthIn
 
     }
 
-    //Takes a reco intercation, finds its best-matched truth interaction, and returns the interaction type. 
+    //Takes a reco intercation, finds its best-matched truth interaction, and returns the interaction type.
     inline double GetTruthInteractionType(const caf::SRInteractionProxy* sr){
         const caf::SRTrueInteractionProxy* truthInt = GetTruthMatch(sr);
 
