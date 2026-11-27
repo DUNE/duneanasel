@@ -12,33 +12,70 @@ namespace mach3winter26 {
 struct Meta {
   std::unique_ptr<ROOT::RNTupleModel> model;
 
-  std::shared_ptr<std::string> duneanaobj_input_version;
-  std::shared_ptr<std::string> duneanaobj_process_version;
-  std::shared_ptr<std::string> duneanasel_version;
-  std::shared_ptr<double> pot_processed;
-  std::shared_ptr<std::string> reco_path;
-  std::shared_ptr<std::vector<std::string>> truth_categories;
-  std::shared_ptr<std::vector<std::string>> truth_cctopologies;
-  std::shared_ptr<std::vector<std::string>> param_names;
-  std::shared_ptr<std::vector<std::vector<float>>> param_knots;
+  struct {
+    std::shared_ptr<std::string> duneanaobj_input;
+    std::shared_ptr<std::string> duneanaobj_process;
+    std::shared_ptr<std::string> duneanasel;
+  } verinfo;
+
+  struct {
+    // nonswap, nueswap, nutauswap
+    std::shared_ptr<std::array<double, 3>> swap_pot;
+    std::shared_ptr<int> nspills;
+    std::shared_ptr<int> nrecoixn;
+    std::shared_ptr<std::vector<int>> nrecoixn_truthcateg;
+  } processed;
+
+  struct {
+    std::shared_ptr<std::vector<std::string>> categories;
+    std::shared_ptr<std::vector<std::string>> cctopologies;
+    std::shared_ptr<std::vector<int>> nixn_categ;
+  } truth;
+
+  struct {
+    std::shared_ptr<std::vector<std::string>> param_names;
+    std::shared_ptr<std::vector<std::vector<float>>> param_knots;
+  } syst;
+
+  struct {
+    std::shared_ptr<std::string> path;
+    std::shared_ptr<std::vector<std::string>> selection_categories;
+  } reco;
+
+  struct {
+    std::shared_ptr<std::string> name;
+  } det;
 
   Meta() {
     model = ROOT::RNTupleModel::Create();
 
-    duneanaobj_input_version =
-        model->MakeField<std::string>("duneanaobj_input_version");
-    duneanaobj_process_version =
-        model->MakeField<std::string>("duneanaobj_process_version");
-    duneanasel_version = model->MakeField<std::string>("duneanasel_version");
-    pot_processed = model->MakeField<double>("pot_processed");
-    reco_path = model->MakeField<std::string>("reco_path");
-    truth_categories =
+    verinfo.duneanaobj_input =
+        model->MakeField<std::string>("verinfo_duneanaobj_input");
+    verinfo.duneanaobj_process =
+        model->MakeField<std::string>("verinfo_duneanaobj_process");
+    verinfo.duneanasel = model->MakeField<std::string>("verinfo_duneanasel");
+
+    processed.swap_pot =
+        model->MakeField<std::array<double, 3>>("processed_swap_pot");
+    processed.nspills = model->MakeField<int>("processed_nspills");
+    processed.nrecoixn = model->MakeField<int>("processed_nrecoixn");
+    processed.nrecoixn_truthcateg =
+        model->MakeField<std::vector<int>>("processed_nrecoixn_truthcateg");
+
+    truth.categories =
         model->MakeField<std::vector<std::string>>("truth_categories");
-    truth_cctopologies =
+    truth.cctopologies =
         model->MakeField<std::vector<std::string>>("truth_cctopologies");
-    param_names = model->MakeField<std::vector<std::string>>("param_names");
-    param_knots =
-        model->MakeField<std::vector<std::vector<float>>>("param_knots");
+    truth.nixn_categ = model->MakeField<std::vector<int>>("truth_cctopologies");
+
+    syst.param_names =
+        model->MakeField<std::vector<std::string>>("syst_param_names");
+    syst.param_knots =
+        model->MakeField<std::vector<std::vector<float>>>("syst_param_knots");
+
+    reco.path = model->MakeField<std::string>("reco_path");
+
+    det.name = model->MakeField<std::string>("det_name");
   }
 };
 

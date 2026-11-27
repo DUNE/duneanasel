@@ -25,7 +25,9 @@ struct NamedCut {
 };
 
 struct DetSel {
+  std::string name;
   ana::RecoBranch reco_stack;
+  std::vector<std::string> selection_categories;
   std::function<bool(double, double, double)> InDetTrueVtxVolume;
   std::vector<NamedCut> CutFlow;
 
@@ -53,7 +55,9 @@ constexpr static bool kSPINE = true;
 constexpr static bool kPandora = true;
 
 DetSel NDLAr{
+    "NDLAr",
     ana::RecoBranch::kSPINE,
+    {"numucc_0pi", "numucc_inc"},
     [](double x, double y, double z) {
       return ana::NDLArGeo::IsInOuterFiducialVolume(x, y, z);
     },
@@ -74,7 +78,9 @@ DetSel NDLAr{
     }};
 
 DetSel FDHD{
+    "FDHD",
     ana::RecoBranch::kPandora,
+    {"numucc_inc", "nuecc_inc", "nc_inc"},
     [](double x, double y, double z) { return sel::beam::FDHD::InFV(x, y, z); },
     {NamedCut{"Vertex in FV",
               [](caf::SRInteraction const &ixn) {
@@ -143,14 +149,20 @@ int main(int argc, const char *argv[]) {
   global->GetEntry(0);
   gl->UpdateVersionInformation();
 
-  *meta.duneanaobj_input_version = gl->first_version;
-  *meta.duneanaobj_process_version = gl->latest_version;
-  *meta.duneanasel_version = DUNEANASEL_VERSION;
+  *meta.verinfo.duneanaobj_input = gl->first_version;
+  *meta.verinfo.duneanaobj_process = gl->latest_version;
+  *meta.verinfo.duneanasel = DUNEANASEL_VERSION;
 
-  *meta.truth_categories = ana::TruthCategories;
-  *meta.truth_cctopologies = ana::CCTopologies;
+  *meta.truth.categories = ana::TruthCategories;
+  *meta.truth.cctopologies = ana::CCTopologies;
+  *meta.truth.nixn_categ = std::vector<int>(ana::TruthCategories.size(), 0);
 
-  *meta.pot_processed = 1; // currently broken in the inputs I think
+  // currently broken in the inputs I think
+  *meta.processed.swap_pot = {1, 0, 0};
+  *meta.processed.nspills = 0;
+  *meta.processed.nrecoixn = 0;
+  *meta.processed.nrecoixn_truthcateg =
+      std::vector<int>(ana::CCTopologies.size(), 0);
 
   for (auto const &xp : gl->wgts.xsec_params) {
     meta.param_names->push_back(xp.name);
@@ -169,18 +181,35 @@ int main(int argc, const char *argv[]) {
 
   cafTr->GetEntry(0);
   auto &det_sel = GetDetectorSelection(*sr);
-  *meta.reco_path = ana::to_string(det_sel.reco_stack);
+  *meta.det.name = det_sel.name;
 
-  size_t filled = 0, allixn = 0;
+  *meta.reco.path = ana::to_string(det_sel.reco_stack);
+  *meta.reco.selection_categories = det_sel.selection_categories;
+
+  size_t filled = 0;
 
   for (int i = 0; i < cafTr->GetEntries(); ++i) {
     cafTr->GetEntry(i);
+    *meta.processed.nspills++;
+
+    for (size_t tj = 0; tj < sr->mc.nu.size(); ++tj) {
+      auto const &tixn = sr->mc.nu.at(tj);
+
+      meta.truth.nixn_categ->at(static_cast<int>(
+          ana::GetTrueCategory(&tixn, det_sel.InDetTrueVtxVolume)))++;
+    }
 
     auto const &ixns = ana::GetInteractions(*sr, det_sel.reco_stack);
 
-    for (size_t j = 0; j < ixns.size(); ++j) {
-      auto const &ixn = ixns.at(j);
-      allixn++;
+    for (size_t ij = 0; ij < ixns.size(); ++ij) {
+      auto const &ixn = ixns.at(ij);
+      *meta.processed.nrecoixn++;
+
+      auto const *tixn = ana::GetTrueInteraction(*sr, ixn);
+
+      auto tcat = static_cast<int>(
+          ana::GetTrueCategory(tixn, det_sel.InDetTrueVtxVolume));
+      meta.processed.nrecoixn_truthcateg->at(tcat)++;
 
       // bit field where failed cuts are marked as 1:
       // - so passes masked-in cuts == 0
@@ -192,7 +221,7 @@ int main(int argc, const char *argv[]) {
       }
 
       *event.sr_entry = i;
-      *event.ixn_entry = j;
+      *event.ixn_entry = ij;
       *event.reco.vtx_pos_cm = {ixn.vtx.x, ixn.vtx.y, ixn.vtx.z};
       *event.reco.shower_e_GeV = 0;
       *event.reco.sum_hadtrack_e_GeV = 0;
@@ -216,10 +245,7 @@ int main(int argc, const char *argv[]) {
 
       *event.reco.sample = mach3winter26::Event::kNumuCCLike;
 
-      auto const *tixn = ana::GetTrueInteraction(*sr, ixn);
-
-      *event.truth.category = static_cast<int>(
-          ana::GetTrueCategory(tixn, det_sel.InDetTrueVtxVolume));
+      *event.truth.category = tcat;
       *event.truth.is_cc = false;
       *event.truth.mode = 0;
       *event.truth.vtx_pos_cm = {-9999, -9999, -9999};
@@ -253,7 +279,7 @@ int main(int argc, const char *argv[]) {
     }
     if (i && !(i % 10)) {
       std::cout << "processed " << i << "/" << cafTr->GetEntries() << " ("
-                << filled << "/" << allixn
+                << filled << "/" << *meta.processed.nrecoixn
                 << " skimmed events) spills from the input" << std::endl;
     }
   }
