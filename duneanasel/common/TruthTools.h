@@ -93,20 +93,26 @@ enum class CCTopo {
   kCC1Pim,
   kCCMultiPi,
   kCCOther,
+  kNoTruth
 };
 
 static std::vector<std::string> const CCTopologies = {
-    "CC0Meson", "CC1Pip", "CC1Pi0", "CC1Pim", "CCMultiPi", "CCOther",
-};
+    "CC0Meson",  "CC1Pip",  "CC1Pi0", "CC1Pim",
+    "CCMultiPi", "CCOther", "NoTruth"};
 
 template <typename T, typename C = Proxyable_t<caf::SRTrueInteraction, T>>
-inline CCTopo GetTrueCCTopology(T const &tixn) {
+inline CCTopo GetTrueCCTopology(T const *tixn) {
+
+  if (!tixn) {
+    return CCTopo::kNoTruth;
+  }
+
   int lepton_number = 0;
   int npip = 0, npim = 0, npi0 = 0;
   // ignore low energy gammas as they may be from nuclear de-excitation
   int ngamma = 0, ngamma_lt10mev = 0;
   int nother = 0;
-  for (auto const &p : tixn.prim) {
+  for (auto const &p : tixn-> prim) {
     switch (p.pdg) {
     case 11:
       lepton_number++;
@@ -145,10 +151,10 @@ inline CCTopo GetTrueCCTopology(T const &tixn) {
   nother += ngamma;
 
   // weird number of leptons
-  if ((tixn.pdg > 0) && (lepton_number != 1)) {
+  if ((tixn->pdg > 0) && (lepton_number != 1)) {
     return CCTopo::kCCOther;
   }
-  if ((tixn.pdg < 0) && (lepton_number != -1)) {
+  if ((tixn->pdg < 0) && (lepton_number != -1)) {
     return CCTopo::kCCOther;
   }
   if (nother) {

@@ -23,13 +23,13 @@ struct Meta {
     std::shared_ptr<std::array<double, 3>> swap_pot;
     std::shared_ptr<int> nspills;
     std::shared_ptr<int> nrecoixn;
-    std::shared_ptr<std::vector<int>> nrecoixn_truthcateg;
+    std::shared_ptr<std::vector<std::vector<int>>> nrecoixn_cctopo;
   } processed;
 
   struct {
     std::shared_ptr<std::vector<std::string>> categories;
     std::shared_ptr<std::vector<std::string>> cctopologies;
-    std::shared_ptr<std::vector<int>> nixn_categ;
+    std::shared_ptr<std::vector<std::vector<int>>> nixn_cctopo;
   } truth;
 
   struct {
@@ -59,15 +59,15 @@ struct Meta {
         model->MakeField<std::array<double, 3>>("processed_swap_pot");
     processed.nspills = model->MakeField<int>("processed_nspills");
     processed.nrecoixn = model->MakeField<int>("processed_nrecoixn");
-    processed.nrecoixn_truthcateg =
-        model->MakeField<std::vector<int>>("processed_nrecoixn_truthcateg");
+    processed.nrecoixn_cctopo = model->MakeField<std::vector<std::vector<int>>>(
+        "processed_nrecoixn_cctopo");
 
     truth.categories =
         model->MakeField<std::vector<std::string>>("truth_categories");
-    truth.nixn_categ =
-        model->MakeField<std::vector<int>>("truth_nixn_truthcateg");
     truth.cctopologies =
         model->MakeField<std::vector<std::string>>("truth_cctopologies");
+    truth.nixn_cctopo =
+        model->MakeField<std::vector<std::vector<int>>>("truth_nixn_cctopo");
 
     syst.param_names =
         model->MakeField<std::vector<std::string>>("syst_param_names");
@@ -75,6 +75,8 @@ struct Meta {
         model->MakeField<std::vector<std::vector<float>>>("syst_param_knots");
 
     reco.path = model->MakeField<std::string>("reco_path");
+    reco.selection_categories =
+        model->MakeField<std::vector<std::string>>("reco_selection_categories");
 
     det.name = model->MakeField<std::string>("det_name");
   }

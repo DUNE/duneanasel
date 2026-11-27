@@ -6,8 +6,8 @@
 #include "duneanasel/common/RecoTools.h"
 #include "duneanasel/common/TruthTools.h"
 
-#include "duneanasel/nd/ndlar/numucc/inc/Selections.h"
 #include "duneanasel/nd/ndlar/numucc/0pi/Selections.h"
+#include "duneanasel/nd/ndlar/numucc/inc/Selections.h"
 
 #include "duneanasel/fd/beam/Selections.h"
 
@@ -114,14 +114,17 @@ int main(int argc, const char *argv[]) {
 
   *meta.truth.categories = ana::TruthCategories;
   *meta.truth.cctopologies = ana::CCTopologies;
-  *meta.truth.nixn_categ = std::vector<int>(ana::TruthCategories.size(), 0);
+  *meta.truth.nixn_cctopo = std::vector<std::vector<int>>(
+      ana::TruthCategories.size(),
+      std::vector<int>(ana::CCTopologies.size(), 0));
 
   // currently broken in the inputs I think
   *meta.processed.swap_pot = {1, 0, 0};
   *meta.processed.nspills = 0;
   *meta.processed.nrecoixn = 0;
-  *meta.processed.nrecoixn_truthcateg =
-      std::vector<int>(ana::CCTopologies.size(), 0);
+  *meta.processed.nrecoixn_cctopo = std::vector<std::vector<int>>(
+      ana::TruthCategories.size(),
+      std::vector<int>(ana::CCTopologies.size(), 0));
 
   for (auto const &xp : gl->wgts.xsec_params) {
     meta.syst.param_names->push_back(xp.name);
@@ -152,10 +155,13 @@ int main(int argc, const char *argv[]) {
     (*meta.processed.nspills)++;
 
     for (size_t tj = 0; tj < sr->mc.nu.size(); ++tj) {
-      auto const &tixn = sr->mc.nu.at(tj);
+      auto const *tixn = &sr->mc.nu.at(tj);
 
-      meta.truth.nixn_categ->at(static_cast<int>(
-          ana::GetTrueCategory(&tixn, det_sel.InDetTrueVtxVolume)))++;
+      auto tcat = static_cast<int>(
+          ana::GetTrueCategory(tixn, det_sel.InDetTrueVtxVolume));
+      auto tcctopo = static_cast<int>(ana::GetTrueCCTopology(tixn));
+
+      meta.truth.nixn_cctopo->at(tcat)[tcctopo]++;
     }
 
     auto const &ixns = ana::GetInteractions(*sr, det_sel.reco_stack);
@@ -166,9 +172,11 @@ int main(int argc, const char *argv[]) {
 
       auto const *tixn = ana::GetTrueInteraction(*sr, ixn);
 
-      auto tcat = static_cast<int>(
+      *event.truth.category = static_cast<int>(
           ana::GetTrueCategory(tixn, det_sel.InDetTrueVtxVolume));
-      meta.processed.nrecoixn_truthcateg->at(tcat)++;
+      *event.truth.cctopology = static_cast<int>(ana::GetTrueCCTopology(tixn));
+      meta.processed.nrecoixn_cctopo->at(
+          *event.truth.category)[*event.truth.cctopology]++;
 
       *event.reco.sample = det_sel.Selection(ixn);
       if (!*event.reco.sample) {
@@ -198,7 +206,6 @@ int main(int argc, const char *argv[]) {
           (*event.reco.shower_e_GeV + *event.reco.sum_hadtrack_e_GeV +
            *event.reco.mu_e_GeV);
 
-      *event.truth.category = tcat;
       *event.truth.is_cc = false;
       *event.truth.mode = 0;
       *event.truth.vtx_pos_cm = {-9999, -9999, -9999};
@@ -208,10 +215,6 @@ int main(int argc, const char *argv[]) {
       event.truth.param_responses->clear();
       if (tixn) {
         *event.truth.is_cc = tixn->iscc;
-        *event.truth.cctopology =
-            *event.truth.category
-                ? -1
-                : static_cast<int>(ana::GetTrueCCTopology(*tixn));
 
         *event.truth.mode = tixn->mode;
         *event.truth.vtx_pos_cm = {tixn->vtx.x, tixn->vtx.y, tixn->vtx.z};
